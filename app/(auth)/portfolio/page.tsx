@@ -135,7 +135,10 @@ export default async function PortfolioPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase.from('vc_watchlist').select('fund_id').eq('tenant_id', profile.tenant_id),
+    supabase
+      .from('vc_watchlist')
+      .select('fund_id, escalated, last_reviewed_at')
+      .eq('tenant_id', profile.tenant_id),
   ]);
   const complianceRows = rows;
 
@@ -145,10 +148,22 @@ export default async function PortfolioPage() {
 
   const nestedFunds = (funds ?? []) as NestedFund[];
   const activeFunds = complianceRows.length;
-  const watchFundIds = new Set(
-    (wlRes.error ? [] : (wlRes.data ?? [])).map((r) => String((r as { fund_id: string }).fund_id)),
-  );
+  type WlDashRow = { fund_id: string; escalated: boolean; last_reviewed_at: string | null };
+  const wlEntries = (wlRes.error ? [] : (wlRes.data ?? [])) as WlDashRow[];
+  const watchFundIds = new Set(wlEntries.map((r) => String(r.fund_id)));
   const nestedById = new Map(nestedFunds.map((f) => [f.id, f]));
+
+  const reviewNow = startOfDay(new Date());
+  const staleWatchlistCount = wlEntries.filter((r) => {
+    const reviewed = r.last_reviewed_at ? new Date(r.last_reviewed_at) : null;
+    const daysSinceReview =
+      reviewed && !Number.isNaN(reviewed.getTime())
+        ? Math.floor((reviewNow.getTime() - reviewed.getTime()) / 86400000)
+        : Number.POSITIVE_INFINITY;
+    if (!reviewed || daysSinceReview > 90) return true;
+    if (r.escalated && daysSinceReview > 30) return true;
+    return false;
+  }).length;
 
   let totalUsdCommitted = 0;
   for (const f of nestedFunds) {
@@ -332,6 +347,22 @@ export default async function PortfolioPage() {
         </div>
         <p className="text-sm text-gray-400">{todayStr}</p>
       </div>
+
+      {staleWatchlistCount > 0 ? (
+        <div className="mb-3 flex items-center gap-2.5 rounded-lg border border-amber-400 bg-amber-50 px-3.5 py-2.5">
+          <AlertCircle className="h-5 w-5 shrink-0 text-amber-900" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-amber-900">
+              {staleWatchlistCount} watchlist {staleWatchlistCount === 1 ? 'entry requires' : 'entries require'}{' '}
+              review
+            </div>
+            <div className="text-xs text-amber-800">No assessment or review in 90+ days</div>
+          </div>
+          <a href="/portfolio/watchlist" className="shrink-0 text-xs font-medium text-amber-900 hover:underline">
+            Review now →
+          </a>
+        </div>
+      ) : null}
 
       <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="relative overflow-hidden rounded-xl border border-gray-200 border-t-4 border-t-blue-500 bg-white p-5">

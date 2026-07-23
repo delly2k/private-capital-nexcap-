@@ -916,7 +916,6 @@ export type Database = {
           requires_quarterly_financial: boolean;
           requires_quarterly_inv_mgmt: boolean;
           requires_audited_annual: boolean;
-          requires_inhouse_quarterly: boolean;
           report_months: number[];
           audit_month: number;
           exchange_rate_jmd_usd: number | null;
@@ -966,7 +965,6 @@ export type Database = {
           requires_quarterly_financial?: boolean;
           requires_quarterly_inv_mgmt?: boolean;
           requires_audited_annual?: boolean;
-          requires_inhouse_quarterly?: boolean;
           report_months?: number[];
           audit_month?: number;
           exchange_rate_jmd_usd?: number | null;
@@ -1016,7 +1014,6 @@ export type Database = {
           requires_quarterly_financial?: boolean;
           requires_quarterly_inv_mgmt?: boolean;
           requires_audited_annual?: boolean;
-          requires_inhouse_quarterly?: boolean;
           report_months?: number[];
           audit_month?: number;
           exchange_rate_jmd_usd?: number | null;
@@ -1662,6 +1659,15 @@ export type Database = {
           escalated: boolean;
           escalated_at: string | null;
           notes: string | null;
+          placement_type: 'automatic' | 'manual';
+          placed_by: string | null;
+          removal_reason: string | null;
+          removed_by: string | null;
+          removed_at: string | null;
+          last_assessed_at: string | null;
+          last_reviewed_at: string | null;
+          last_reviewed_by: string | null;
+          next_review_due: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1675,6 +1681,15 @@ export type Database = {
           escalated?: boolean;
           escalated_at?: string | null;
           notes?: string | null;
+          placement_type?: 'automatic' | 'manual';
+          placed_by?: string | null;
+          removal_reason?: string | null;
+          removed_by?: string | null;
+          removed_at?: string | null;
+          last_assessed_at?: string | null;
+          last_reviewed_at?: string | null;
+          last_reviewed_by?: string | null;
+          next_review_due?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1688,8 +1703,62 @@ export type Database = {
           escalated?: boolean;
           escalated_at?: string | null;
           notes?: string | null;
+          placement_type?: 'automatic' | 'manual';
+          placed_by?: string | null;
+          removal_reason?: string | null;
+          removed_by?: string | null;
+          removed_at?: string | null;
+          last_assessed_at?: string | null;
+          last_reviewed_at?: string | null;
+          last_reviewed_by?: string | null;
+          next_review_due?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      vc_watchlist_history: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          fund_id: string;
+          action: 'placed' | 'removed' | 'escalated' | 'updated';
+          placement_type: 'automatic' | 'manual';
+          reason: string | null;
+          assessment_id: string | null;
+          performed_by: string | null;
+          consecutive_quarters: number | null;
+          score: number | null;
+          category: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          fund_id: string;
+          action: 'placed' | 'removed' | 'escalated' | 'updated';
+          placement_type: 'automatic' | 'manual';
+          reason?: string | null;
+          assessment_id?: string | null;
+          performed_by?: string | null;
+          consecutive_quarters?: number | null;
+          score?: number | null;
+          category?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          fund_id?: string;
+          action?: 'placed' | 'removed' | 'escalated' | 'updated';
+          placement_type?: 'automatic' | 'manual';
+          reason?: string | null;
+          assessment_id?: string | null;
+          performed_by?: string | null;
+          consecutive_quarters?: number | null;
+          score?: number | null;
+          category?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -2311,6 +2380,9 @@ export type VcQuarterlyAssessment = Database['public']['Tables']['vc_quarterly_a
 
 /** Row shape for `public.vc_watchlist` (Epic 13). */
 export type VcWatchlistEntry = Database['public']['Tables']['vc_watchlist']['Row'];
+
+/** Row shape for `public.vc_watchlist_history`. */
+export type VcWatchlistHistoryEntry = Database['public']['Tables']['vc_watchlist_history']['Row'];
 
 /** Fund application row; `cfp_id` optional for callers that predate Epic 2 linkage. */
 export interface VcFundApplication extends Omit<Database['public']['Tables']['vc_fund_applications']['Row'], 'cfp_id'> {

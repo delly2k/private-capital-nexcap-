@@ -37,8 +37,6 @@ export function formatReportType(type: string): string {
       return 'Annual Audited Accounts';
     case 'quarterly_investment_mgmt':
       return 'Quarterly Investment Management';
-    case 'inhouse_quarterly':
-      return 'In-House Quarterly Report';
     default:
       return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   }

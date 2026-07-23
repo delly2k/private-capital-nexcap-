@@ -37,7 +37,6 @@ const REPORT_SHORT: Record<string, string> = {
   quarterly_financial: 'Fin',
   quarterly_investment_mgmt: 'Inv',
   audited_annual: 'AUD',
-  inhouse_quarterly: 'IH',
 };
 
 function fundAbbrev(name: string) {
@@ -625,7 +624,6 @@ export function PortfolioReportingCalendar({
             <option value="quarterly_financial">Quarterly Financial</option>
             <option value="quarterly_investment_mgmt">Quarterly Inv. Mgmt</option>
             <option value="audited_annual">Annual Audit</option>
-            <option value="inhouse_quarterly">In-house Quarterly</option>
           </select>
         </div>
       </div>

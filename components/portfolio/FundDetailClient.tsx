@@ -71,7 +71,6 @@ const REPORT_LABELS: Record<string, string> = {
   quarterly_financial: 'Quarterly Financial',
   quarterly_investment_mgmt: 'Quarterly Inv. Mgmt',
   audited_annual: 'Annual Audit',
-  inhouse_quarterly: 'In-house Quarterly',
 };
 
 function fmtMoney(currency: string, n: number) {
@@ -192,7 +191,6 @@ export function FundDetailClient({
       quarterly_financial: byType('quarterly_financial'),
       quarterly_inv_mgmt: byType('quarterly_investment_mgmt'),
       audited_annual: byType('audited_annual'),
-      inhouse_quarterly: byType('inhouse_quarterly'),
     };
   }, [reportingRows]);
 
@@ -484,7 +482,6 @@ export function FundDetailClient({
       requires_quarterly_financial: chk('requires_quarterly_financial'),
       requires_quarterly_inv_mgmt: chk('requires_quarterly_inv_mgmt'),
       requires_audited_annual: chk('requires_audited_annual'),
-      requires_inhouse_quarterly: chk('requires_inhouse_quarterly'),
       notes: String(fd.get('notes') ?? '').trim() || null,
       fund_category: fundCategory || null,
       commitment_date: commitmentDate || null,
@@ -750,7 +747,6 @@ export function FundDetailClient({
                 <option value="quarterly_financial">Quarterly Financial</option>
                 <option value="quarterly_investment_mgmt">Quarterly Inv. Mgmt</option>
                 <option value="audited_annual">Annual Audit</option>
-                <option value="inhouse_quarterly">In-house Quarterly</option>
               </select>
             </div>
             <div>

@@ -7,8 +7,7 @@ import type { Json, VcFundNarrativeExtract, VcQuarterlyAssessment, VcWatchlistEn
 export type PortfolioReportType =
   | 'quarterly_financial'
   | 'quarterly_investment_mgmt'
-  | 'audited_annual'
-  | 'inhouse_quarterly';
+  | 'audited_annual';
 
 export type PortfolioFundRow = {
   id: string;
@@ -33,7 +32,6 @@ export type PortfolioFundRow = {
   requires_quarterly_financial: boolean;
   requires_quarterly_inv_mgmt: boolean;
   requires_audited_annual: boolean;
-  requires_inhouse_quarterly: boolean;
   report_months: number[];
   audit_month: number;
   exchange_rate_jmd_usd: number | null;
@@ -131,6 +129,8 @@ export type WatchlistFundRow = {
   last_category: string | null;
   last_divestment_recommendation: string | null;
   last_assessment_period: string | null;
+  /** Computed by GET /api/portfolio/watchlist — not a DB column. */
+  is_stale: boolean;
 };
 
 export type DimensionFactor = {

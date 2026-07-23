@@ -6,7 +6,6 @@ export type ComplianceScoresBlock = {
   quarterly_financial: number;
   quarterly_inv_mgmt: number;
   audited_annual: number;
-  inhouse_quarterly: number;
 };
 
 function scoreColor(pct: number): string {
@@ -53,7 +52,6 @@ const ROWS: { key: keyof ComplianceScoresBlock; label: string }[] = [
   { key: 'quarterly_financial', label: 'Quarterly Financial' },
   { key: 'quarterly_inv_mgmt', label: 'Quarterly Inv. Mgmt' },
   { key: 'audited_annual', label: 'Audited Annual' },
-  { key: 'inhouse_quarterly', label: 'In-house Quarterly' },
 ];
 
 export function ComplianceScorecardCard({

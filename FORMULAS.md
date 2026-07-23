@@ -166,7 +166,7 @@ where `t_i` = **actual/365** year fraction from **first cash-flow calendar date*
 
 **Formula:**  
 For each report type `rt` in  
-`['quarterly_financial','quarterly_investment_mgmt','audited_annual','inhouse_quarterly']`:  
+`['quarterly_financial','quarterly_investment_mgmt','audited_annual']`:  
 - `rate_rt = round(100 * done_rt / count_rt)` where `count_rt` = obligations with that `report_type`, `done_rt` = subset whose status (lowercased) is **`accepted` OR `waived`**. If `count_rt === 0`, **`rate_rt = 0`**.  
 - **`deriveComplianceScore = round(100 * (sum of four rates) / 4) / 100`** (average of four percentages; if `rates.length === 0` returns **0** — with four fixed types, length is always 4).
 
@@ -224,7 +224,6 @@ Start from `vc_assessment_config` numeric columns (`weight_financial_performance
 - Skip if `periodEnd < commitment_date` or `periodEnd > horizonEnd`.  
 - **`isYearEnd`** = `(month === fund.year_end_month)`.  
 - **Quarterly financial / inv mgmt:** if required and **not** year-end → due uses **`quarterly_report_due_days`**.  
-- **In-house quarterly:** if required → same quarterly due days (still uses quarter-end months; **not** skipped on year-end in code).  
 - **Audited annual:** if required and **`isYearEnd`** → due uses **`audit_report_due_days`**.
 
 **PVC:** No separate branch — only fund boolean flags matter.

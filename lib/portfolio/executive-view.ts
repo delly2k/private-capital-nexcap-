@@ -498,5 +498,4 @@ export const REPORT_TYPE_LABELS_EXEC: Record<string, string> = {
   quarterly_financial: 'Quarterly Fin.',
   quarterly_investment_mgmt: 'Quarterly Inv.',
   audited_annual: 'Annual Audit',
-  inhouse_quarterly: 'In-house',
 };

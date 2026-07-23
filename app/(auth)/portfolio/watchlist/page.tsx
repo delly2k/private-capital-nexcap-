@@ -13,12 +13,6 @@ export default async function WatchlistPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#0B1F45]">Watchlist</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Funds flagged from approved quarterly assessments (watchlist, freeze, or divest tracks).
-        </p>
-      </div>
       <WatchlistClient />
     </div>
   );

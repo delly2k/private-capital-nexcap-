@@ -335,6 +335,13 @@ export async function POST(req: Request, ctx: Ctx) {
           recommendation: u.divestment_recommendation,
           assessmentId: u.id,
           config: cfg,
+          performedBy: profile.profile_id,
+          assessment: {
+            assessment_period: u.assessment_period,
+            weighted_total_score: u.weighted_total_score,
+            category: u.category,
+            ai_summary: u.ai_summary,
+          },
         });
         if (!wl.ok) {
           return NextResponse.json({ error: wl.error }, { status: 500 });

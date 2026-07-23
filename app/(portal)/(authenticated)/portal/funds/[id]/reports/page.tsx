@@ -127,8 +127,6 @@ function reportTypeIcon(reportType: string): { icon: string; bg: string; color: 
       return { icon: 'ti ti-file-analytics', bg: '#E6F1FB', color: '#185FA5' };
     case 'audited_annual':
       return { icon: 'ti ti-building-bank', bg: '#EEEDFE', color: '#534AB7' };
-    case 'inhouse_quarterly':
-      return { icon: 'ti ti-file-description', bg: '#FAEEDA', color: '#633806' };
     default:
       return { icon: 'ti ti-file-text', bg: '#F3F4F6', color: '#4B5563' };
   }
@@ -568,7 +566,6 @@ export default function PortalFundReportsPage() {
                 <option value="quarterly_financial">Quarterly Financial</option>
                 <option value="quarterly_investment_mgmt">Investment Management</option>
                 <option value="audited_annual">Annual Audited</option>
-                <option value="inhouse_quarterly">In-House Quarterly</option>
               </select>
             </div>
 

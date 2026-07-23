@@ -95,7 +95,7 @@ const CATEGORY_OPTIONS: { value: FundCategoryValue; label: string }[] = [
 ];
 
 const REPORT_TILES: {
-  name: 'requires_quarterly_financial' | 'requires_quarterly_inv_mgmt' | 'requires_audited_annual' | 'requires_inhouse_quarterly';
+  name: 'requires_quarterly_financial' | 'requires_quarterly_inv_mgmt' | 'requires_audited_annual';
   title: string;
   description: string;
 }[] = [
@@ -113,11 +113,6 @@ const REPORT_TILES: {
     name: 'requires_audited_annual',
     title: 'Audited Annual',
     description: 'Annual audited financial statements',
-  },
-  {
-    name: 'requires_inhouse_quarterly',
-    title: 'In-house Quarterly',
-    description: 'DBJ internal quarterly assessment',
   },
 ];
 
@@ -480,9 +475,7 @@ export function FundSettingsTab({
                             ? fund.requires_quarterly_financial
                             : tile.name === 'requires_quarterly_inv_mgmt'
                               ? fund.requires_quarterly_inv_mgmt
-                              : tile.name === 'requires_audited_annual'
-                                ? fund.requires_audited_annual
-                                : fund.requires_inhouse_quarterly
+                              : fund.requires_audited_annual
                         }
                         className="mt-0.5 accent-[#0B1F45]"
                       />

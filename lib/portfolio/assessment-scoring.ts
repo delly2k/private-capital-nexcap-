@@ -14,7 +14,6 @@ const REPORT_TYPES: PortfolioReportType[] = [
   'quarterly_financial',
   'quarterly_investment_mgmt',
   'audited_annual',
-  'inhouse_quarterly',
 ];
 
 function yearsBetween(commitmentDate: string, assessmentDate: string): number {

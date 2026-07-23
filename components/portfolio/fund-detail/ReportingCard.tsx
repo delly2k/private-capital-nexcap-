@@ -58,11 +58,9 @@ export function ReportingCard({ fund, fundId }: { fund: PortfolioFundRow; fundId
           {fund.requires_quarterly_financial ? <span style={neutralPill}>Quarterly Financial</span> : null}
           {fund.requires_quarterly_inv_mgmt ? <span style={neutralPill}>Inv. Mgmt</span> : null}
           {fund.requires_audited_annual ? <span style={neutralPill}>Audited Annual</span> : null}
-          {fund.requires_inhouse_quarterly ? <span style={neutralPill}>In-house</span> : null}
           {!fund.requires_quarterly_financial &&
           !fund.requires_quarterly_inv_mgmt &&
-          !fund.requires_audited_annual &&
-          !fund.requires_inhouse_quarterly ? (
+          !fund.requires_audited_annual ? (
             <span style={{ fontSize: 12, color: 'var(--color-text-primary)' }}>—</span>
           ) : null}
         </div>

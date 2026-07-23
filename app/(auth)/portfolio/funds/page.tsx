@@ -40,7 +40,6 @@ const FUND_MONITORING_LIST_SELECT = [
   'requires_quarterly_financial',
   'requires_quarterly_inv_mgmt',
   'requires_audited_annual',
-  'requires_inhouse_quarterly',
   'report_months',
   'audit_month',
   'exchange_rate_jmd_usd',

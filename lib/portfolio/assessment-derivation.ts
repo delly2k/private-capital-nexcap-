@@ -247,7 +247,7 @@ export function deriveFundManagement(params: {
 
 export function deriveComplianceGovernance(params: { obligations: VcReportingObligation[] }): DimensionResult {
   const c = deriveComplianceScore(params.obligations);
-  const byType = ['quarterly_financial', 'quarterly_investment_mgmt', 'audited_annual', 'inhouse_quarterly'].map((t) => ({
+  const byType = ['quarterly_financial', 'quarterly_investment_mgmt', 'audited_annual'].map((t) => ({
     t,
     rows: params.obligations.filter((o) => o.report_type === t),
   }));

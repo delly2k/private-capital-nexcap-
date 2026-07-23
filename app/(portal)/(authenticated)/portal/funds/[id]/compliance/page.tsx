@@ -830,8 +830,6 @@ function reportIconClass(reportType: string): string {
       return 'ti ti-file-analytics';
     case 'audited_annual':
       return 'ti ti-building-bank';
-    case 'inhouse_quarterly':
-      return 'ti ti-file-description';
     default:
       return 'ti ti-file-text';
   }
@@ -842,7 +840,6 @@ function iconColors(reportType: string, visual: RowVisual): { bg: string; color:
   if (visual === 'overdue') return { bg: '#F7C1C1', color: '#791F1F' };
   switch (reportType) {
     case 'quarterly_financial':
-    case 'inhouse_quarterly':
       return { bg: '#E1F5EE', color: '#0F6E56' };
     case 'quarterly_investment_mgmt':
       return { bg: '#E6F1FB', color: '#185FA5' };

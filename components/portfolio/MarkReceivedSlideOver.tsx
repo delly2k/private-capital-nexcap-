@@ -14,7 +14,6 @@ const REPORT_LABELS: Record<string, string> = {
   quarterly_financial: 'Quarterly Financial',
   quarterly_investment_mgmt: 'Quarterly Inv. Mgmt',
   audited_annual: 'Annual Audit',
-  inhouse_quarterly: 'In-house Quarterly',
 };
 
 type ObligationLite = {

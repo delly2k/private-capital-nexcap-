@@ -123,20 +123,6 @@ export async function generateReportingObligations(
         });
       }
 
-      if (fund.requires_inhouse_quarterly) {
-        const due = calculateDueDate(periodEnd, fund.quarterly_report_due_days);
-        obligations.push({
-          tenant_id: fund.tenant_id,
-          fund_id: fund.id,
-          report_type: 'inhouse_quarterly',
-          period_year: year,
-          period_month: month,
-          period_label: periodLabelBase('inhouse_quarterly'),
-          due_date: toDateStr(due),
-          status: 'pending',
-        });
-      }
-
       if (fund.requires_audited_annual && isYearEnd) {
         const due = calculateDueDate(periodEnd, fund.audit_report_due_days);
         obligations.push({

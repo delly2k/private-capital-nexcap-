@@ -101,8 +101,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     b.audit_report_due_days !== u.audit_report_due_days ||
     b.requires_quarterly_financial !== u.requires_quarterly_financial ||
     b.requires_quarterly_inv_mgmt !== u.requires_quarterly_inv_mgmt ||
-    b.requires_audited_annual !== u.requires_audited_annual ||
-    b.requires_inhouse_quarterly !== u.requires_inhouse_quarterly;
+    b.requires_audited_annual !== u.requires_audited_annual;
 
   if (regen) {
     await generateReportingObligations(supabase, u);

@@ -31,7 +31,6 @@ export type FundObligationOverview = {
     quarterly_financial: number;
     quarterly_investment_mgmt: number;
     audited_annual: number;
-    inhouse_quarterly: number;
   };
 };
 
@@ -65,7 +64,6 @@ export function computeFundObligationOverview(rows: FundObligationOverviewObliga
     quarterly_financial: complianceRateByType(lite, 'quarterly_financial'),
     quarterly_investment_mgmt: complianceRateByType(lite, 'quarterly_investment_mgmt'),
     audited_annual: complianceRateByType(lite, 'audited_annual'),
-    inhouse_quarterly: complianceRateByType(lite, 'inhouse_quarterly'),
   };
 
   return {
