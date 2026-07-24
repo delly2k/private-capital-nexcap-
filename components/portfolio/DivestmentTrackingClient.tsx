@@ -1,11 +1,14 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useCallback, useMemo, useState } from 'react';
 import { ArrowRightLeft, BarChart2, Clock, MoreHorizontal, TrendingUp } from 'lucide-react';
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
 import type { DivestmentRow } from '@/lib/portfolio/divestments';
 import { DIVESTMENT_TYPES, toUsd } from '@/lib/portfolio/divestments';
 import { cn } from '@/lib/utils';
@@ -127,7 +130,7 @@ export function DivestmentTrackingClient({ initialData, funds }: { initialData: 
     if (yearFilter !== 'all') p.set('year', yearFilter);
     const res = await fetch(`/api/portfolio/divestments?${p.toString()}`);
     const j = (await res.json()) as Payload & { error?: string };
-    if (!res.ok) throw new Error(j.error ?? 'Failed to load');
+    if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed to load'));
     setData(j);
   }, [fundFilter, typeFilter, statusFilter, yearFilter]);
 
@@ -218,7 +221,7 @@ export function DivestmentTrackingClient({ initialData, funds }: { initialData: 
         }),
       });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed to save');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed to save'));
       setOpenCreate(false);
       setEditingId(null);
       setForm(INITIAL_FORM);
@@ -236,7 +239,7 @@ export function DivestmentTrackingClient({ initialData, funds }: { initialData: 
     try {
       const res = await fetch(`/api/portfolio/divestments/${id}`, { method: 'DELETE' });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       await reload();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Request failed');
@@ -265,7 +268,7 @@ export function DivestmentTrackingClient({ initialData, funds }: { initialData: 
         </Button>
       </div>
 
-      {err ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p> : null}
+      {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} /> : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-xl border border-gray-200 border-t-4 border-t-[#0B1F45] bg-white p-4">

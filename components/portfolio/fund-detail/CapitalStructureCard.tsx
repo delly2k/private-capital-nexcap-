@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -361,7 +363,7 @@ export function CapitalStructureCard({
         exchange_rate_jmd_usd?: number | null;
         currency?: string;
       };
-      if (!res.ok) throw new Error(j.error ?? 'Save failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Save failed'));
 
       const totalFund = Number(j.total_fund_commitment ?? editForm.total_fund_commitment);
       const allowed = new Set(['confirmed', 'estimated', 'sole_investor', 'not_applicable', 'unknown']);
@@ -436,7 +438,7 @@ export function CapitalStructureCard({
           body: JSON.stringify(body),
         });
         const j = (await res.json()) as { error?: string; coinvestor?: VcFundCoinvestor };
-        if (!res.ok || !j.coinvestor) throw new Error(j.error ?? 'Failed to add');
+        if (!res.ok || !j.coinvestor) throw new Error(apiErrorDisplay(j, 'Failed to add'));
         const mapped = mapCoinvestorRow(j.coinvestor);
         setData((prev) =>
           withDerived(prev, {
@@ -451,7 +453,7 @@ export function CapitalStructureCard({
           body: JSON.stringify(body),
         });
         const j = (await res.json()) as { error?: string; coinvestor?: VcFundCoinvestor };
-        if (!res.ok || !j.coinvestor) throw new Error(j.error ?? 'Failed to update');
+        if (!res.ok || !j.coinvestor) throw new Error(apiErrorDisplay(j, 'Failed to update'));
         const mapped = mapCoinvestorRow(j.coinvestor);
         setData((prev) =>
           withDerived(prev, {
@@ -479,7 +481,7 @@ export function CapitalStructureCard({
     try {
       const res = await fetch(`/api/portfolio/funds/${fundId}/coinvestors/${coinvestorId}`, { method: 'DELETE' });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Delete failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Delete failed'));
       setToast('Co-investor removed.');
     } catch (e) {
       setData((prev) => withDerived(prev, { coinvestors: prevList }));

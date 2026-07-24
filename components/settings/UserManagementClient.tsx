@@ -7,7 +7,6 @@ import { AlertTriangle, CheckCircle, Mail, Users, X } from 'lucide-react';
 
 import type { PendingInviteVm, UserManagementSnapshot, UserRowVm } from '@/lib/settings/user-management-snapshot';
 import { roleAvatarClass, roleBadgeClass, roleDisplayLabel } from '@/lib/settings/role-visual';
-import { ASSIGNABLE_INVITE_ROLES } from '@/lib/auth/rbac';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { AddInternalUserModal } from '@/components/settings/AddInternalUserModal';
@@ -16,6 +15,19 @@ type Props = {
   initial: UserManagementSnapshot;
   currentProfileId: string;
 };
+
+const ASSIGNABLE_ROLES = [
+  'pctu_officer',
+  'portfolio_manager',
+  'investment_officer',
+  'panel_member',
+  'it_admin',
+  'senior_management',
+  'analyst',
+  'officer',
+  'viewer',
+  'fund_manager',
+] as const;
 
 function initials(name: string) {
   return name
@@ -33,6 +45,12 @@ function formatAssigned(at: string, by: string | null) {
   return by ? `${date} · by ${by}` : date;
 }
 
+function apiErrorMessage(body: { message?: string; error?: unknown }, fallback: string): string {
+  if (body.message && typeof body.message === 'string') return body.message;
+  if (typeof body.error === 'string') return body.error;
+  return fallback;
+}
+
 export function UserManagementClient({ initial, currentProfileId }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,13 +60,15 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
   const [users, setUsers] = useState(initial.users);
   const [invites, setInvites] = useState(initial.pending_invitations);
   const [stats, setStats] = useState(initial.stats);
-  const [editingRoleUser, setEditingRoleUser] = useState<UserRowVm | null>(null);
-  const [editingRoleValue, setEditingRoleValue] = useState<string | null>(null);
-  const [deactivateUser, setDeactivateUser] = useState<UserRowVm | null>(null);
+  const [editingRoleForId, setEditingRoleForId] = useState<string | null>(null);
+  const [pendingRole, setPendingRole] = useState('');
+  const [isSavingRole, setIsSavingRole] = useState(false);
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
   const [reactivateUser, setReactivateUser] = useState<UserRowVm | null>(null);
   const [showAddInternalModal, setShowAddInternalModal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const res = await fetch('/api/settings/users');
@@ -59,54 +79,77 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
     setStats(j.stats);
   }, []);
 
-  const onRoleSave = async (row: UserRowVm, role: string) => {
-    setBusy(true);
+  const handleRoleChange = async (profileId: string, newRole: string) => {
+    setIsSavingRole(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/settings/users/${row.profile_id}/role`, {
+      const res = await fetch(`/api/settings/users/${profileId}/role`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({ role: newRole }),
       });
-      if (!res.ok) throw new Error(await res.text());
-      setEditingRoleUser(null);
-      setEditingRoleValue(null);
-      setNotice(`${row.full_name} updated to ${roleDisplayLabel(role)}.`);
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: unknown };
+        setError(apiErrorMessage(body, 'Failed to update role'));
+        return;
+      }
+      setEditingRoleForId(null);
+      setPendingRole('');
+      setNotice(`Role updated to ${roleDisplayLabel(newRole)}.`);
       await refresh();
       router.refresh();
+    } catch {
+      setError('Failed to update role');
     } finally {
-      setBusy(false);
+      setIsSavingRole(false);
     }
   };
 
-  const onDeactivate = async () => {
-    if (!deactivateUser) return;
-    setBusy(true);
+  const handleDeactivate = async (profileId: string) => {
+    const confirmed = window.confirm(
+      'Deactivate this user? They will lose access to the platform immediately.',
+    );
+    if (!confirmed) return;
+
+    setDeactivatingId(profileId);
+    setError(null);
     try {
-      const res = await fetch(`/api/settings/users/${deactivateUser.profile_id}/deactivate`, {
-        method: 'PATCH',
-      });
-      if (!res.ok) throw new Error(await res.text());
-      setNotice(`${deactivateUser.full_name} has been deactivated.`);
-      setDeactivateUser(null);
+      const res = await fetch(`/api/settings/users/${profileId}/deactivate`, { method: 'PATCH' });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: unknown };
+        setError(apiErrorMessage(body, 'Failed to deactivate user'));
+        return;
+      }
+      setNotice('User has been deactivated.');
+      setEditingRoleForId(null);
       await refresh();
       router.refresh();
+    } catch {
+      setError('Failed to deactivate user');
     } finally {
-      setBusy(false);
+      setDeactivatingId(null);
     }
   };
 
   const onReactivate = async () => {
     if (!reactivateUser) return;
     setBusy(true);
+    setError(null);
     try {
       const res = await fetch(`/api/settings/users/${reactivateUser.profile_id}/reactivate`, {
         method: 'PATCH',
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: unknown };
+        setError(apiErrorMessage(body, 'Failed to reactivate user'));
+        return;
+      }
       setNotice(`${reactivateUser.full_name} has been reactivated.`);
       setReactivateUser(null);
       await refresh();
       router.refresh();
+    } catch {
+      setError('Failed to reactivate user');
     } finally {
       setBusy(false);
     }
@@ -114,11 +157,18 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
 
   const onResend = async (id: string) => {
     setBusy(true);
+    setError(null);
     try {
       const res = await fetch(`/api/settings/users/invitations/${id}/resend`, { method: 'PATCH' });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: unknown };
+        setError(apiErrorMessage(body, 'Failed to resend invitation'));
+        return;
+      }
       setNotice('Invitation resent.');
       await refresh();
+    } catch {
+      setError('Failed to resend invitation');
     } finally {
       setBusy(false);
     }
@@ -126,11 +176,18 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
 
   const onRevoke = async (id: string) => {
     setBusy(true);
+    setError(null);
     try {
       const res = await fetch(`/api/settings/users/invitations/${id}/revoke`, { method: 'PATCH' });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string; error?: unknown };
+        setError(apiErrorMessage(body, 'Failed to revoke invitation'));
+        return;
+      }
       setNotice('Invitation revoked.');
       await refresh();
+    } catch {
+      setError('Failed to revoke invitation');
     } finally {
       setBusy(false);
     }
@@ -153,10 +210,39 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
   const activeUsers = users.filter((u) => u.is_active && u.profile_active);
   const inactiveUsers = users.filter((u) => !u.is_active || !u.profile_active);
 
-  const roleOptions = ASSIGNABLE_INVITE_ROLES;
-
   return (
     <div className="w-full max-w-none space-y-6 pb-10">
+      {error ? (
+        <div
+          style={{
+            background: '#FEE2E2',
+            border: '0.5px solid #FCA5A5',
+            borderRadius: 8,
+            padding: '10px 14px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ fontSize: 13, color: '#991B1B' }}>{error}</div>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#991B1B',
+              cursor: 'pointer',
+              fontSize: 16,
+              padding: 0,
+            }}
+            aria-label="Dismiss error"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
       {notice ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {notice}
@@ -289,7 +375,9 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
               </thead>
               <tbody>
                 {activeUsers.map((row) => {
-                  const isAdmin = row.role === 'admin' || row.synthetic;
+                  const isActualAdmin = row.role === 'admin';
+                  const isSelf = row.profile_id === currentProfileId;
+                  const noActions = isActualAdmin || isSelf;
                   return (
                     <tr key={row.user_role_id} className="border-b border-gray-50">
                       <td className="px-4 py-3">
@@ -309,14 +397,69 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={cn(
-                            'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                            roleBadgeClass(row.role),
-                          )}
-                        >
-                          {roleDisplayLabel(row.role)}
-                        </span>
+                        {editingRoleForId === row.profile_id ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <select
+                              value={pendingRole}
+                              onChange={(e) => setPendingRole(e.target.value)}
+                              style={{
+                                fontSize: 12,
+                                padding: '4px 8px',
+                                borderRadius: 6,
+                                border: '0.5px solid var(--color-border-secondary, #D1D5DB)',
+                                background: 'var(--color-background-primary, #fff)',
+                                color: 'var(--color-text-primary, #0B1F45)',
+                              }}
+                            >
+                              {ASSIGNABLE_ROLES.map((r) => (
+                                <option key={r} value={r}>
+                                  {roleDisplayLabel(r)}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => void handleRoleChange(row.profile_id, pendingRole)}
+                              disabled={isSavingRole || !pendingRole || pendingRole === row.role}
+                              style={{
+                                fontSize: 11,
+                                color: 'white',
+                                background: '#0B1F45',
+                                border: 'none',
+                                borderRadius: 6,
+                                padding: '4px 10px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {isSavingRole ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingRoleForId(null);
+                                setPendingRole('');
+                              }}
+                              style={{
+                                fontSize: 11,
+                                color: 'var(--color-text-secondary, #6B7280)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            className={cn(
+                              'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+                              roleBadgeClass(row.role),
+                            )}
+                          >
+                            {roleDisplayLabel(row.role)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{formatAssigned(row.assigned_at, row.assigned_by_name)}</td>
                       <td className="px-4 py-3">
@@ -326,27 +469,64 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {isAdmin || row.profile_id === currentProfileId ? (
-                          <span className="text-xs italic text-gray-300">System admin</span>
+                        {noActions ? (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--color-text-tertiary, #9CA3AF)',
+                              fontStyle: 'italic',
+                            }}
+                          >
+                            {isSelf ? 'You' : 'Admin'}
+                          </span>
                         ) : (
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-[#0B1F45] hover:bg-[#0B1F45]/5 hover:text-[#0B1F45]"
-                              onClick={() => {
-                                setEditingRoleUser(row);
-                                setEditingRoleValue(row.role);
-                              }}
-                            >
-                              Edit Role
-                            </button>
-                            <button
-                              type="button"
-                              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50"
-                              onClick={() => setDeactivateUser(row)}
-                            >
-                              Deactivate
-                            </button>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'flex-end',
+                              gap: 12,
+                            }}
+                          >
+                            {editingRoleForId !== row.profile_id ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingRoleForId(row.profile_id);
+                                    setPendingRole(row.role);
+                                    setError(null);
+                                  }}
+                                  style={{
+                                    fontSize: 12,
+                                    color: '#0066CC',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Edit role
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeactivate(row.profile_id)}
+                                  disabled={deactivatingId === row.profile_id}
+                                  style={{
+                                    fontSize: 12,
+                                    color: '#991B1B',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {deactivatingId === row.profile_id ? 'Deactivating...' : 'Deactivate'}
+                                </button>
+                              </>
+                            ) : null}
                           </div>
                         )}
                       </td>
@@ -383,7 +563,7 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
                     </td>
                   </tr>
                 ) : (
-                  invites.map((inv) => {
+                  invites.map((inv: PendingInviteVm) => {
                     const exp = inviteExpiresLabel(inv.token_expires_at);
                     return (
                       <tr key={inv.id} className="border-b border-gray-50">
@@ -513,17 +693,6 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
       </div>
 
       <ActionConfirmModal
-        open={!!deactivateUser}
-        busy={busy}
-        title={deactivateUser ? `Deactivate ${deactivateUser.full_name}?` : ''}
-        description="This will immediately remove their access to the platform. They will not be able to sign in until reactivated."
-        confirmLabel="Yes, Deactivate"
-        kind="deactivate"
-        onCancel={() => setDeactivateUser(null)}
-        onConfirm={() => void onDeactivate()}
-      />
-
-      <ActionConfirmModal
         open={!!reactivateUser}
         busy={busy}
         title={reactivateUser ? `Reactivate ${reactivateUser.full_name}?` : ''}
@@ -539,29 +708,12 @@ export function UserManagementClient({ initial, currentProfileId }: Props) {
         onConfirm={() => void onReactivate()}
       />
 
-      <EditRoleModal
-        open={!!editingRoleUser}
-        busy={busy}
-        user={editingRoleUser}
-        selectedRole={editingRoleValue}
-        onSelectRole={setEditingRoleValue}
-        onClose={() => {
-          setEditingRoleUser(null);
-          setEditingRoleValue(null);
-        }}
-        onSave={() => {
-          if (editingRoleUser && editingRoleValue) {
-            void onRoleSave(editingRoleUser, editingRoleValue);
-          }
-        }}
-        roleOptions={roleOptions}
-      />
-
       <AddInternalUserModal
         open={showAddInternalModal}
         onClose={() => setShowAddInternalModal(false)}
         onAdded={(msg) => {
           setNotice(msg);
+          setError(null);
           void refresh();
           router.refresh();
         }}
@@ -628,116 +780,6 @@ function ActionConfirmModal({
             disabled={busy}
           >
             {confirmLabel}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EditRoleModal({
-  open,
-  busy,
-  user,
-  selectedRole,
-  onSelectRole,
-  onClose,
-  onSave,
-  roleOptions,
-}: {
-  open: boolean;
-  busy: boolean;
-  user: UserRowVm | null;
-  selectedRole: string | null;
-  onSelectRole: (role: string) => void;
-  onClose: () => void;
-  onSave: () => void;
-  roleOptions: readonly string[];
-}) {
-  if (!open || !user) return null;
-  const selected = selectedRole ?? user.role;
-  const canSave = selected !== user.role;
-
-  const descriptions: Record<string, string> = {
-    pctu_officer: 'Full portfolio monitoring access',
-    investment_officer: 'Full pipeline management access',
-    portfolio_manager: 'Portfolio monitoring and pipeline access',
-    panel_member: 'Assigned assessments only',
-    it_admin: 'User management only',
-    senior_management: 'Executive dashboard read-only',
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-lg font-semibold text-[#0B1F45]">Edit Role</h3>
-        <button
-          type="button"
-          className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        <div className="mb-5 mt-4 flex items-center gap-3 border-b border-gray-100 pb-4">
-          <span
-            className={cn(
-              'inline-flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold',
-              roleAvatarClass(user.role),
-            )}
-          >
-            {initials(user.full_name)}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-[#0B1F45]">{user.full_name}</p>
-            <p className="truncate text-xs text-gray-400">{user.email}</p>
-          </div>
-          <span className={cn('inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium', roleBadgeClass(user.role))}>
-            {roleDisplayLabel(user.role)}
-          </span>
-        </div>
-
-        <p className="mb-3 text-sm font-medium text-gray-600">Select new role</p>
-        <div className="space-y-2">
-          {roleOptions.map((role) => (
-            <label
-              key={role}
-              className="flex cursor-pointer items-center gap-3 rounded-lg border border-transparent p-3 transition-colors hover:bg-gray-50 has-[:checked]:border-[#0B1F45] has-[:checked]:bg-[#0B1F45]/5"
-            >
-              <input
-                type="radio"
-                name="edit-role"
-                value={role}
-                checked={selected === role}
-                onChange={() => onSelectRole(role)}
-                className="accent-[#0B1F45]"
-              />
-              <div>
-                <div className="text-sm font-medium text-[#0B1F45]">{roleDisplayLabel(role)}</div>
-                <div className="text-xs text-gray-400">{descriptions[role] ?? ''}</div>
-              </div>
-            </label>
-          ))}
-        </div>
-
-        <div className="mt-5 flex justify-end gap-3 border-t border-gray-100 pt-4">
-          <Button type="button" variant="outline" className="border-gray-200 text-gray-600" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            className="bg-[#0B1F45] text-white hover:bg-[#0B1F45]/90"
-            disabled={busy || !canSave}
-            onClick={onSave}
-          >
-            Save Role
           </Button>
         </div>
       </div>

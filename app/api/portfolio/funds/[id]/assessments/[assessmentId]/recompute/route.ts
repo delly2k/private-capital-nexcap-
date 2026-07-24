@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 
 import { getProfile, requireAuth } from '@/lib/auth/session';
 import { can } from '@/lib/auth/permissions';
@@ -24,7 +25,7 @@ export async function POST(_req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage assessments. Contact your administrator.");
   }
 
   const { id: fundId, assessmentId } = await ctx.params;

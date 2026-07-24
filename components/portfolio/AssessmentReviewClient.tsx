@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -8,6 +10,7 @@ import { Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
 import type { VcQuarterlyAssessment } from '@/types/database';
 
 type AssessmentRow = VcQuarterlyAssessment & {
@@ -99,7 +102,7 @@ export function AssessmentReviewClient({
         body: JSON.stringify(body),
       });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Update failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Update failed'));
       await reload();
       router.refresh();
       return true;
@@ -133,7 +136,7 @@ export function AssessmentReviewClient({
     try {
       const res = await fetch(`/api/portfolio/funds/${fundId}/assessments/${row.id}/ai-summary`, { method: 'POST' });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'AI summary failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'AI summary failed'));
       await reload();
       router.refresh();
     } catch (e) {
@@ -157,7 +160,7 @@ export function AssessmentReviewClient({
         <span className="text-gray-700">{row.assessment_period}</span>
       </div>
 
-      {err ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</div> : null}
+      {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} /> : null}
 
       <div className="rounded-xl bg-[#0B1F45] px-6 py-5 text-white">
         <div className="flex flex-wrap items-start justify-between gap-4">

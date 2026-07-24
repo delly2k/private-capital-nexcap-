@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { forbidden, FORBIDDEN_MSG } from '@/lib/api/error-responses';
 import { z } from 'zod';
 
 import { createServerClient } from '@/lib/supabase/server';
 import { getProfile, requireAuth } from '@/lib/auth/session';
 import { can } from '@/lib/auth/permissions';
+import { hasModuleWriteAccess } from '@/lib/auth/has-module-write-access';
 import type { VcFundCoinvestor } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +43,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("You do not have permission to perform this action. Contact your administrator if you believe this is incorrect.");
   }
   const { id: fundId } = await ctx.params;
   const supabase = createServerClient();
@@ -72,10 +74,11 @@ export async function POST(req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden(FORBIDDEN_MSG.fundMonitoring);
   }
-  if (profile.role !== 'admin' && profile.role !== 'pctu_officer') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const canWrite = await hasModuleWriteAccess(profile.tenant_id, profile.role, 'fund_monitoring');
+  if (!canWrite) {
+    return forbidden(FORBIDDEN_MSG.fundMonitoring);
   }
 
   const { id: fundId } = await ctx.params;

@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -193,7 +195,7 @@ export function ComplianceDashboardClient({
         paged?: boolean;
         error?: string;
       };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setOverdueRows(j.obligations ?? []);
       setOverdueTotal(typeof j.total === 'number' ? j.total : j.obligations?.length ?? 0);
       setOverdueTotalPages(typeof j.totalPages === 'number' ? Math.max(1, j.totalPages) : 1);
@@ -212,7 +214,7 @@ export function ComplianceDashboardClient({
       const q = activityFundFilter === 'all' ? '' : `?fund_id=${encodeURIComponent(activityFundFilter)}`;
       const res = await fetch(`/api/portfolio/compliance/actions${q}`);
       const j = (await res.json()) as { actions?: ActivityRow[]; error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setActivity(j.actions ?? []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');
@@ -303,7 +305,7 @@ DBJ Private Capital Team`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'send_reminder', reminder_recipient: recipient }),
         });
-        if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
+        if (!res.ok) throw new Error(apiErrorDisplay((await res.json().catch(() => ({}))) as ApiErrorBody, 'Failed'));
       }
       setReminderOpen(false);
     } catch (e) {
@@ -330,7 +332,7 @@ DBJ Private Capital Team`;
             notes: escNotes.trim() || null,
           }),
         });
-        if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
+        if (!res.ok) throw new Error(apiErrorDisplay((await res.json().catch(() => ({}))) as ApiErrorBody, 'Failed'));
       }
       setEscalateOpen(false);
     } catch (e) {
@@ -354,7 +356,7 @@ DBJ Private Capital Team`;
           submitted_by: recvBy.trim(),
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay((await res.json().catch(() => ({}))) as ApiErrorBody, 'Failed'));
       setRecvOpen(false);
       await loadOverdue();
     } catch (e) {

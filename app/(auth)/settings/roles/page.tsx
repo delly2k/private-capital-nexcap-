@@ -93,8 +93,6 @@ const MODULE_ICON: Record<string, LucideIcon> = {
   user_management: Users,
 };
 
-const ALL_MODULE_IDS = Object.values(MODULES).flat().map((m) => m.id);
-
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -112,11 +110,20 @@ export default function RoleManagementPage() {
   const [saveState, setSaveState] = useState<'idle' | 'saved'>('idle');
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [roleCounts, setRoleCounts] = useState<Record<string, number>>({});
-  const [moduleCounts, setModuleCounts] = useState<Record<string, number>>({});
+  const [, setModuleCounts] = useState<Record<string, number>>({});
   const [roleUsers, setRoleUsers] = useState<Array<{ id: string; full_name: string; email: string }>>([]);
 
   const selectedMeta = ROLES.find((r) => r.id === selectedRole) ?? ROLES[0]!;
   const selectedIsAdmin = selectedRole === 'admin';
+  const selectedUserCount = roleCounts[selectedRole] ?? 0;
+
+  const selectedRoleData = {
+    id: selectedMeta.id,
+    label: selectedMeta.label,
+    color: selectedMeta.color,
+    userCount: selectedUserCount,
+    isSystem: selectedIsAdmin,
+  };
 
   async function loadRoleStats() {
     const res = await fetch('/api/settings/roles');
@@ -156,11 +163,7 @@ export default function RoleManagementPage() {
     [permissions],
   );
 
-  const selectedUserCount = roleCounts[selectedRole] ?? 0;
-
-  const saveLabel = isSaving ? 'Saving...' : saveState === 'saved' ? 'Saved ✓' : isDirty ? 'Save changes ●' : 'Save changes';
-
-  const saveClass = saveState === 'saved' ? 'bg-[#0F8A6E] hover:bg-[#0F8A6E]' : 'bg-[#0B1F45] hover:bg-[#0B1F45]/90';
+  const saveLabel = isSaving ? 'Saving...' : saveState === 'saved' ? 'Saved ✓' : 'Save changes';
 
   async function savePermissions() {
     if (!isDirty || selectedIsAdmin) return;
@@ -217,160 +220,307 @@ export default function RoleManagementPage() {
   }
 
   return (
-    <div className="pb-8">
-      <div className="flex min-h-[calc(100vh-170px)] gap-4">
-        <aside className="w-[220px] rounded-xl border border-gray-200 bg-white">
-          <div className="border-b border-gray-100 px-4 py-4">
-            <p className="text-sm font-semibold text-[#0B1F45]">Roles</p>
-            <p className="mt-1 text-xs text-gray-400">Configure module access by role</p>
-          </div>
-          <div className="py-2">
-            {ROLES.map((role) => {
-              const active = role.id === selectedRole;
-              return (
-                <div
-                  key={role.id}
-                  onClick={() => void switchRole(role.id)}
-                  className={cn(
-                    'mx-2 mb-1 flex cursor-pointer items-center gap-[10px] rounded-lg border px-3 py-[9px]',
-                    active ? 'border-gray-200 bg-[#F3F4F6]' : 'border-transparent hover:bg-gray-50',
-                  )}
-                >
-                  {role.id === 'admin' ? (
-                    <Lock className="h-3.5 w-3.5 text-gray-500" />
-                  ) : (
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: role.color }} />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-[#0B1F45]">{role.label}</p>
-                    <p className="text-xs text-gray-400">
-                      {role.id === 'admin' ? 'System role — read only' : `(${roleCounts[role.id] ?? 0} users)`}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </aside>
+    <div className="pb-8" style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 500,
+            color: 'var(--color-text-primary, #0B1F45)',
+            marginBottom: 4,
+          }}
+        >
+          Role Management
+        </h1>
+        <p
+          style={{
+            fontSize: 13,
+            color: 'var(--color-text-secondary, #6B7280)',
+            margin: 0,
+          }}
+        >
+          Configure module access by role
+        </p>
+      </div>
 
-        <section className="flex min-w-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white">
-          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-            <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold text-[#0B1F45]">{selectedMeta.label}</h1>
-              <span
-                className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
-                style={{ backgroundColor: selectedMeta.color }}
-              >
-                {selectedMeta.id}
-              </span>
-            </div>
-            <Button
+      <div
+        style={{
+          display: 'flex',
+          gap: 4,
+          marginBottom: 24,
+          borderBottom: '0.5px solid var(--color-border-tertiary, #E5E7EB)',
+          paddingBottom: 0,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+        }}
+      >
+        {ROLES.map((role) => {
+          const active = selectedRole === role.id;
+          const userCount = roleCounts[role.id] ?? 0;
+          return (
+            <button
+              key={role.id}
               type="button"
-              className={cn('text-white', saveClass)}
-              disabled={!isDirty || isSaving || selectedIsAdmin}
+              onClick={() => void switchRole(role.id)}
+              style={{
+                padding: '8px 16px',
+                fontSize: 13,
+                fontWeight: active ? 500 : 400,
+                color: active ? '#0B1F45' : 'var(--color-text-secondary, #6B7280)',
+                background: 'none',
+                border: 'none',
+                borderBottom: active ? '2px solid #0B1F45' : '2px solid transparent',
+                cursor: 'pointer',
+                marginBottom: -1,
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {role.label}
+              {userCount > 0 ? (
+                <span
+                  style={{
+                    background: '#E6F1FB',
+                    color: '#185FA5',
+                    fontSize: 11,
+                    padding: '1px 6px',
+                    borderRadius: 20,
+                    fontWeight: 500,
+                  }}
+                >
+                  {userCount}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 4,
+                flexWrap: 'wrap',
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 500,
+                  color: 'var(--color-text-primary, #0B1F45)',
+                  margin: 0,
+                }}
+              >
+                {selectedRoleData.label}
+              </h2>
+              <span
+                style={{
+                  background: '#F3F4F6',
+                  color: '#374151',
+                  fontSize: 11,
+                  padding: '2px 8px',
+                  borderRadius: 20,
+                  border: '0.5px solid #E5E7EB',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {selectedRoleData.id}
+              </span>
+              {selectedRoleData.isSystem ? (
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--color-text-tertiary, #9CA3AF)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Lock className="h-3 w-3" aria-hidden="true" />
+                  System role — read only
+                </span>
+              ) : null}
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--color-text-secondary, #6B7280)',
+              }}
+            >
+              {selectedRoleData.userCount} user
+              {selectedRoleData.userCount !== 1 ? 's' : ''} assigned
+            </div>
+          </div>
+
+          {!selectedRoleData.isSystem ? (
+            <button
+              type="button"
               onClick={() => void savePermissions()}
+              disabled={!isDirty || isSaving}
+              style={{
+                background: saveState === 'saved' ? '#0F8A6E' : isDirty ? '#0B1F45' : '#E5E7EB',
+                color: isDirty || saveState === 'saved' ? 'white' : '#9CA3AF',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 20px',
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: isDirty && !isSaving ? 'pointer' : 'not-allowed',
+                flexShrink: 0,
+              }}
             >
               {saveLabel}
-            </Button>
-          </div>
+            </button>
+          ) : null}
+        </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4">
-            {(
-              [
-                ['portfolio', 'Portfolio'],
-                ['pipeline', 'Pipeline'],
-                ['operations', 'Operations'],
-              ] as const
-            ).map(([key, title]) => (
-              <div className="mb-6" key={key}>
-                <div className="mb-3 border-b border-gray-100 pb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                  {title}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {MODULES[key].map((mod) => {
-                    const access = permissions[mod.id] ?? 'none';
-                    const enabled = access === 'full' || access === 'read_only';
-                    const Icon = MODULE_ICON[mod.id] ?? Settings;
-                    return (
-                      <div
-                        key={mod.id}
-                        onClick={() => handleModuleChange(mod.id)}
-                        className={cn(
-                          'cursor-pointer rounded-xl border p-3',
-                          selectedIsAdmin && 'cursor-not-allowed border-gray-100 bg-gray-50 opacity-60',
-                          !selectedIsAdmin && enabled && 'border-[#0B1F45] bg-[rgba(11,31,69,0.03)]',
-                          !selectedIsAdmin && !enabled && 'border-gray-200 bg-white',
-                        )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <Icon className={cn('mt-0.5 h-4 w-4', enabled ? 'text-[#0B1F45]' : 'text-gray-300')} />
-                          <div className="min-w-0 flex-1">
-                            <p className={cn('text-sm font-medium', enabled ? 'text-[#0B1F45]' : 'text-gray-400')}>{mod.label}</p>
-                            <p className="mt-0.5 text-xs text-gray-400">{mod.desc}</p>
-                          </div>
-                          <button
-                            type="button"
-                            disabled={selectedIsAdmin}
-                            className={cn(
-                              'relative h-5 w-9 rounded-full transition-colors',
-                              enabled ? 'bg-[#0B1F45]' : 'bg-[#D1D5DB]',
-                            )}
-                            aria-label={`${mod.label} toggle`}
-                          >
-                            <span
-                              className={cn(
-                                'absolute top-[3px] h-[14px] w-[14px] rounded-full bg-white transition-all',
-                                enabled ? 'left-[18px]' : 'left-[3px]',
-                              )}
-                            />
-                          </button>
-                        </div>
+        {(
+          [
+            ['portfolio', 'Portfolio'],
+            ['pipeline', 'Pipeline'],
+            ['operations', 'Operations'],
+          ] as const
+        ).map(([key, title]) => (
+          <div className="mb-6" key={key}>
+            <div className="mb-3 border-b border-gray-100 pb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+              {title}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {MODULES[key].map((mod) => {
+                const access = permissions[mod.id] ?? 'none';
+                const enabled = access === 'full' || access === 'read_only';
+                const Icon = MODULE_ICON[mod.id] ?? Settings;
+                return (
+                  <div
+                    key={mod.id}
+                    onClick={() => handleModuleChange(mod.id)}
+                    className={cn(
+                      'cursor-pointer rounded-xl border p-3',
+                      selectedIsAdmin && 'cursor-not-allowed border-gray-100 bg-gray-50 opacity-60',
+                      !selectedIsAdmin && enabled && 'border-[#0B1F45] bg-[rgba(11,31,69,0.03)]',
+                      !selectedIsAdmin && !enabled && 'border-gray-200 bg-white',
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Icon className={cn('mt-0.5 h-4 w-4', enabled ? 'text-[#0B1F45]' : 'text-gray-300')} />
+                      <div className="min-w-0 flex-1">
+                        <p className={cn('text-sm font-medium', enabled ? 'text-[#0B1F45]' : 'text-gray-400')}>{mod.label}</p>
+                        <p className="mt-0.5 text-xs text-gray-400">{mod.desc}</p>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-
-            <div className="mt-4">
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Users with this role</div>
-              <div className="rounded-lg border border-gray-100 bg-white">
-                {roleUsers.length === 0 ? (
-                  <div className="px-3 py-3 text-sm italic text-gray-400">No users assigned to this role</div>
-                ) : (
-                  roleUsers.map((u) => (
-                    <div key={u.id} className="flex items-center gap-3 border-b border-gray-50 px-3 py-2 last:border-b-0">
-                      <span
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white"
-                        style={{ backgroundColor: selectedMeta.color }}
+                      <button
+                        type="button"
+                        disabled={selectedIsAdmin}
+                        className={cn(
+                          'relative h-5 w-9 rounded-full transition-colors',
+                          enabled ? 'bg-[#0B1F45]' : 'bg-[#D1D5DB]',
+                        )}
+                        aria-label={`${mod.label} toggle`}
                       >
-                        {initials(u.full_name)}
-                      </span>
-                      <span className="text-sm font-medium text-[#0B1F45]">{u.full_name}</span>
-                      <span className="ml-auto text-xs text-gray-400">{u.email}</span>
+                        <span
+                          className={cn(
+                            'absolute top-[3px] h-[14px] w-[14px] rounded-full bg-white transition-all',
+                            enabled ? 'left-[18px]' : 'left-[3px]',
+                          )}
+                        />
+                      </button>
                     </div>
-                  ))
-                )}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
+        ))}
 
-          <div className="sticky bottom-0 flex items-center gap-6 border-t border-gray-100 bg-gray-50 px-5 py-3">
-            <span className="text-sm text-gray-600">
-              Modules enabled: <strong>{enabledCount}</strong>
-            </span>
-            <span className="text-sm text-gray-600">
-              Users assigned: <strong>{selectedUserCount}</strong>
-            </span>
-            <span className="ml-auto text-xs">
-              {isDirty ? (
-                <span className="text-amber-600">● Unsaved changes</span>
-              ) : (
-                <span className="text-gray-400">All changes saved</span>
-              )}
+        <div
+          style={{
+            marginTop: 24,
+            paddingTop: 16,
+            borderTop: '0.5px solid var(--color-border-tertiary, #E5E7EB)',
+            display: 'flex',
+            gap: 24,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--color-text-secondary, #6B7280)',
+            }}
+          >
+            Modules enabled:{' '}
+            <span
+              style={{
+                fontWeight: 500,
+                color: 'var(--color-text-primary, #0B1F45)',
+              }}
+            >
+              {enabledCount}
             </span>
           </div>
-        </section>
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--color-text-secondary, #6B7280)',
+            }}
+          >
+            Users assigned:{' '}
+            <span
+              style={{
+                fontWeight: 500,
+                color: 'var(--color-text-primary, #0B1F45)',
+              }}
+            >
+              {selectedRoleData.userCount}
+            </span>
+          </div>
+          {!selectedRoleData.isSystem && isDirty ? (
+            <div
+              style={{
+                fontSize: 12,
+                color: '#92400E',
+                marginLeft: 'auto',
+              }}
+            >
+              Unsaved changes
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-6">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Users with this role</div>
+          <div className="rounded-lg border border-gray-100 bg-white">
+            {roleUsers.length === 0 ? (
+              <div className="px-3 py-3 text-sm italic text-gray-400">No users assigned to this role</div>
+            ) : (
+              roleUsers.map((u) => (
+                <div key={u.id} className="flex items-center gap-3 border-b border-gray-50 px-3 py-2 last:border-b-0">
+                  <span
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                    style={{ backgroundColor: selectedMeta.color }}
+                  >
+                    {initials(u.full_name)}
+                  </span>
+                  <span className="text-sm font-medium text-[#0B1F45]">{u.full_name}</span>
+                  <span className="ml-auto text-xs text-gray-400">{u.email}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
       {pendingRole ? (
@@ -392,4 +542,3 @@ export default function RoleManagementPage() {
     </div>
   );
 }
-

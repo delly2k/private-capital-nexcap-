@@ -1,10 +1,13 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
 import { cn } from '@/lib/utils';
 
 type Tab = 'search' | 'create';
@@ -87,7 +90,7 @@ export function FundManagerAssociateModal({
       body: JSON.stringify({ fund_manager_id: managerId }),
     });
     const pj = (await patch.json()) as { error?: string };
-    if (!patch.ok) throw new Error(pj.error ?? 'Could not link manager');
+    if (!patch.ok) throw new Error(apiErrorDisplay(pj, 'Could not link manager'));
   };
 
   const linkFund = async (managerId: string) => {
@@ -163,7 +166,7 @@ export function FundManagerAssociateModal({
           </button>
         </div>
 
-        {err ? <p className="mt-2 text-xs text-red-600">{err}</p> : null}
+        {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} className="mt-2" /> : null}
 
         {tab === 'search' ? (
           <div className="mt-4 space-y-3">

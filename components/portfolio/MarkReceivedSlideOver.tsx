@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 
@@ -141,7 +143,7 @@ export function MarkReceivedSlideOver({
           notes: recvNotes.trim() || null,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay((await res.json().catch(() => ({}))) as ApiErrorBody, 'Failed'));
 
       let suggestExtraction = false;
       if (file) {
@@ -159,7 +161,7 @@ export function MarkReceivedSlideOver({
         fd.set('submitted_date', recvDate.trim());
         const up = await fetch(`/api/portfolio/obligations/${obligation.id}/upload`, { method: 'POST', body: fd });
         const uj = (await up.json()) as { suggest_extraction?: boolean; error?: string };
-        if (!up.ok) throw new Error(uj.error ?? 'Upload failed');
+        if (!up.ok) throw new Error(apiErrorDisplay(uj, 'Upload failed'));
         suggestExtraction = !!uj.suggest_extraction;
       }
 
@@ -192,7 +194,7 @@ export function MarkReceivedSlideOver({
     try {
       const res = await fetch(`/api/portfolio/obligations/${obligation.id}/extract-all`, { method: 'POST' });
       const j = (await res.json()) as UnifiedExtractApiResponse & { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Extraction failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Extraction failed'));
       setPostUploadSuggest(false);
       onUnifiedExtractReady?.(j);
       onClose();

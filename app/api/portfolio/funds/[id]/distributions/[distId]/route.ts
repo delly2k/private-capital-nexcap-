@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 import { z } from 'zod';
 
 import { logAndReturn } from '@/lib/api/errors';
@@ -53,7 +54,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage distributions. Contact your administrator.");
   }
 
   const { id: fundId, distId } = await ctx.params;
@@ -147,7 +148,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage distributions. Contact your administrator.");
   }
 
   const { id: fundId, distId } = await ctx.params;

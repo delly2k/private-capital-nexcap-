@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 import { z } from 'zod';
 
 import { can } from '@/lib/auth/permissions';
@@ -30,7 +31,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage divestments. Contact your administrator.");
   }
   const { id } = await ctx.params;
 
@@ -88,7 +89,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage divestments. Contact your administrator.");
   }
   const { id } = await ctx.params;
   const supabase = createServerClient();

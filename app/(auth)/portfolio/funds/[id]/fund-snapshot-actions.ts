@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { getProfile, requireAuth } from '@/lib/auth/session';
 import { can } from '@/lib/auth/permissions';
+import { FORBIDDEN_MSG } from '@/lib/api/error-responses';
 import { createServerClient } from '@/lib/supabase/server';
 
 const confidenceJsonSchema = z.record(z.string(), z.unknown());
@@ -37,7 +38,7 @@ export async function upsertFundSnapshotAction(fundId: string, raw: unknown): Pr
   await requireAuth();
   const profile = await getProfile();
   if (!fundId || !profile || !can(profile, 'write:applications')) {
-    return { ok: false, error: 'Forbidden' };
+    return { ok: false, error: FORBIDDEN_MSG.snapshots };
   }
 
   const parsed = upsertSchema.safeParse(raw);
@@ -169,7 +170,7 @@ export async function deleteFundSnapshotAction(fundId: string, snapshotId: strin
   await requireAuth();
   const profile = await getProfile();
   if (!fundId || !snapshotId || !profile || !can(profile, 'delete:records')) {
-    return { ok: false, error: 'Forbidden' };
+    return { ok: false, error: FORBIDDEN_MSG.snapshots };
   }
 
   const supabase = createServerClient();

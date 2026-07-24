@@ -16,7 +16,7 @@ export default async function PortfolioCalendarPage() {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return <p className="text-sm text-red-700">Forbidden</p>;
+    return <p className="text-sm text-red-700">You do not have permission to view this page. Contact your administrator if you believe this is incorrect.</p>
   }
 
   const canWrite = Boolean(can(profile, 'write:applications'));

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 
 import { createServerClient } from '@/lib/supabase/server';
 import { getProfile, requireAuth } from '@/lib/auth/session';
@@ -13,7 +14,7 @@ export async function GET(req: Request) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("You do not have permission to perform this action. Contact your administrator if you believe this is incorrect.");
   }
 
   const { searchParams } = new URL(req.url);

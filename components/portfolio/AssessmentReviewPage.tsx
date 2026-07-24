@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
+import { apiErrorDisplay, bannerVariantFromDisplay } from '@/lib/api/client-error';
 import type { DimensionKey } from '@/lib/portfolio/types';
 import type { VcQuarterlyAssessment } from '@/types/database';
 
@@ -83,7 +85,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
       if (res.ok && j.assessment) {
         setAssessment(j.assessment);
       } else {
-        setErr(j.error ?? 'Failed to initialize assessment');
+        setErr(apiErrorDisplay(j, 'Failed to initialize assessment'));
       }
     })();
   }, [assessment, fundId]);
@@ -108,7 +110,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
   async function refreshAssessment() {
     const res = await fetch(`/api/portfolio/funds/${fundId}/assessments/${asm.id}`);
     const j = (await res.json()) as { assessment?: AssessmentWithNames; error?: string };
-    if (!res.ok || !j.assessment) throw new Error(j.error ?? 'Failed to load assessment');
+    if (!res.ok || !j.assessment) throw new Error(apiErrorDisplay(j, 'Failed to load assessment'));
     setAssessment(j.assessment);
   }
 
@@ -118,7 +120,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
     try {
       const res = await fetch(`/api/portfolio/funds/${fundId}/assessments/${asm.id}/recompute`, { method: 'POST' });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Recompute failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Recompute failed'));
       await refreshAssessment();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');
@@ -151,7 +153,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
         }),
       });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Override update failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Override update failed'));
       setOverrideOpen((s) => ({ ...s, [dim]: false }));
       await refreshAssessment();
     } catch (e) {
@@ -167,7 +169,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
     try {
       const res = await fetch(`/api/portfolio/funds/${fundId}/assessments/${asm.id}/ai-summary`, { method: 'POST' });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'AI summary failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'AI summary failed'));
       await refreshAssessment();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');
@@ -186,7 +188,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
         body: JSON.stringify({ status: 'draft', ai_summary: asm.ai_summary ?? null }),
       });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Save failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Save failed'));
       await refreshAssessment();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');
@@ -205,7 +207,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
         body: JSON.stringify({ status: 'submitted', ai_summary: asm.ai_summary ?? null }),
       });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Submit failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Submit failed'));
       router.replace(`/portfolio/funds/${fundId}/assessments/${asm.id}`);
       router.refresh();
     } catch (e) {
@@ -247,7 +249,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
         </div>
       </div>
 
-      {err ? <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</div> : null}
+      {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} /> : null}
 
       <div className="flex gap-6">
         <div className="min-w-0 flex-1">
@@ -412,7 +414,7 @@ export function AssessmentReviewPage({ fundId, fundName, initialAssessment = nul
                             body: JSON.stringify({ ai_summary: asm.ai_summary ?? null }),
                           });
                           const j = (await res.json()) as { error?: string };
-                          if (!res.ok) throw new Error(j.error ?? 'Save failed');
+                          if (!res.ok) throw new Error(apiErrorDisplay(j, 'Save failed'));
                           await refreshAssessment();
                           setEditSummaryManually(false);
                         } catch (e) {

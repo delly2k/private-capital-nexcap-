@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
 import type { DivestmentRow } from '@/lib/portfolio/divestments';
 
 type Fund = { id: string; currency: 'USD' | 'JMD'; fund_name: string };
@@ -32,8 +34,8 @@ export function FundDivestmentsTab({ fund, canWrite }: { fund: Fund; canWrite: b
     setError(null);
     try {
       const res = await fetch(`/api/portfolio/funds/${fund.id}/divestments`);
-      const j = (await res.json()) as { divestments?: DivestmentRow[]; error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed to load');
+      const j = (await res.json().catch(() => ({}))) as { divestments?: DivestmentRow[] } & ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed to load'));
       setRows(j.divestments ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed');
@@ -74,8 +76,8 @@ export function FundDivestmentsTab({ fund, canWrite }: { fund: Fund; canWrite: b
           status: 'completed',
         }),
       });
-      const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setOpen(false);
       setCompany('');
       setDate('');
@@ -91,7 +93,7 @@ export function FundDivestmentsTab({ fund, canWrite }: { fund: Fund; canWrite: b
 
   return (
     <div className="space-y-4">
-      {error ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      {error ? <ApiErrorBanner message={error} variant={bannerVariantFromDisplay(error)} /> : null}
       {rows.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-gray-200 bg-white p-4">

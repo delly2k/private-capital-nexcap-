@@ -5,6 +5,8 @@ import { Pencil } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
 import type { PortfolioFundRow, WatchlistFundRow } from '@/lib/portfolio/types';
 
 type FilterTab = 'all' | 'stale' | 'escalated';
@@ -94,7 +96,7 @@ export function WatchlistClient() {
       error?: string;
     };
     if (!res.ok) {
-      setErr(j.error ?? 'Failed to load watchlist');
+      setErr(apiErrorDisplay(j, 'Failed to load watchlist'));
       setRows([]);
       setCanManage(false);
     } else {
@@ -123,7 +125,7 @@ export function WatchlistClient() {
     const res = await fetch('/api/portfolio/funds?status=active');
     const j = (await res.json()) as { funds?: FundsApiRow[]; error?: string };
     if (!res.ok) {
-      setAddErr(j.error ?? 'Failed to load funds');
+      setAddErr(apiErrorDisplay(j, 'Failed to load funds'));
       setFundOptions([]);
       return;
     }
@@ -152,10 +154,10 @@ export function WatchlistClient() {
         notes: addNotes.trim() || null,
       }),
     });
-    const j = (await res.json()) as { error?: string };
+    const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
     setAddBusy(false);
     if (!res.ok) {
-      setAddErr(j.error ?? 'Failed to add');
+      setAddErr(apiErrorDisplay(j, 'Failed to add'));
       return;
     }
     setShowAddModal(false);
@@ -177,10 +179,10 @@ export function WatchlistClient() {
         reason: removeReason.trim(),
       }),
     });
-    const j = (await res.json()) as { error?: string };
+    const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
     setRemoveBusy(false);
     if (!res.ok) {
-      setRemoveErr(j.error ?? 'Failed to remove');
+      setRemoveErr(apiErrorDisplay(j, 'Failed to remove'));
       return;
     }
     setRemoveTarget(null);
@@ -196,10 +198,10 @@ export function WatchlistClient() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fund_id: fundId, notes: editNotes }),
     });
-    const j = (await res.json()) as { error?: string };
+    const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
     setNotesBusy(false);
     if (!res.ok) {
-      setErr(j.error ?? 'Failed to update notes');
+      setErr(apiErrorDisplay(j, 'Failed to update notes'));
       return;
     }
     setEditingFundId(null);
@@ -214,10 +216,10 @@ export function WatchlistClient() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fund_id: fundId, mark_reviewed: true }),
     });
-    const j = (await res.json()) as { error?: string };
+    const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
     setActionBusyId(null);
     if (!res.ok) {
-      setErr(j.error ?? 'Failed to mark reviewed');
+      setErr(apiErrorDisplay(j, 'Failed to mark reviewed'));
       return;
     }
     await load();
@@ -259,7 +261,7 @@ export function WatchlistClient() {
         </button>
       </div>
 
-      {err ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</div> : null}
+      {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} /> : null}
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full text-left text-sm">
@@ -466,7 +468,7 @@ export function WatchlistClient() {
                   onChange={(e) => setAddNotes(e.target.value)}
                 />
               </label>
-              {addErr ? <p className="text-sm text-red-700">{addErr}</p> : null}
+              {addErr ? <ApiErrorBanner message={addErr} variant={bannerVariantFromDisplay(addErr)} /> : null}
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -506,7 +508,7 @@ export function WatchlistClient() {
                 onChange={(e) => setRemoveReason(e.target.value)}
               />
             </label>
-            {removeErr ? <p className="mt-2 text-sm text-red-700">{removeErr}</p> : null}
+            {removeErr ? <ApiErrorBanner message={removeErr} variant={bannerVariantFromDisplay(removeErr)} /> : null}
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"

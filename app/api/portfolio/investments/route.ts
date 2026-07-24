@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 
 import { createServerClient } from '@/lib/supabase/server';
 import { getProfile } from '@/lib/auth/session';
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const profile = await getProfile();
-  if (!profile) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!profile) return forbidden("You do not have permission to perform this action. Contact your administrator if you believe this is incorrect.");
 
   const { searchParams } = new URL(req.url);
   const sector = searchParams.get('sector');

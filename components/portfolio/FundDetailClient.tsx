@@ -1,8 +1,11 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FundDocumentsLibrary } from '@/components/portfolio/FundDocumentsLibrary';
 import { ChevronLeft, Upload } from 'lucide-react';
 
 import { ClassificationCard } from '@/components/portfolio/fund-detail/ClassificationCard';
@@ -346,7 +349,7 @@ export function FundDetailClient({
           total_pages?: number;
           error?: string;
         };
-        if (!res.ok) throw new Error(j.error ?? 'Failed');
+        if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
         setReportingRows(j.obligations ?? []);
         setReportingTotal(j.total ?? 0);
         setReportingTotalPages(Math.max(1, j.total_pages ?? 1));
@@ -387,7 +390,7 @@ export function FundDetailClient({
     setErr(null);
     try {
       const res = await fetch(`/api/portfolio/funds/${fund.id}/regenerate`, { method: 'POST' });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay((await res.json().catch(() => ({}))) as ApiErrorBody, 'Failed'));
       await reload();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');
@@ -406,7 +409,7 @@ export function FundDetailClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision, review_notes: revNotes.trim() || null }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay((await res.json().catch(() => ({}))) as ApiErrorBody, 'Failed'));
       setRevOpen(null);
       setRevNotes('');
       await reload();
@@ -428,7 +431,7 @@ export function FundDetailClient({
       fd.set('file', file);
       const up = await fetch(`/api/portfolio/obligations/${o.id}/upload`, { method: 'POST', body: fd });
       const j = (await up.json()) as { suggest_extraction?: boolean; error?: string };
-      if (!up.ok) throw new Error(j.error ?? 'Upload failed');
+      if (!up.ok) throw new Error(apiErrorDisplay(j, 'Upload failed'));
       if (j.suggest_extraction && canWrite) setExtractionSuggestObligationId(o.id);
       await reload();
     } catch (e) {
@@ -444,7 +447,7 @@ export function FundDetailClient({
     try {
       const res = await fetch(`/api/portfolio/obligations/${obligationId}/extract-all`, { method: 'POST' });
       const j = (await res.json()) as UnifiedExtractApiResponse & { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Extraction failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Extraction failed'));
       setExtractionSuggestObligationId(null);
       setUnifiedExtractData(j);
     } catch (e) {
@@ -503,7 +506,7 @@ export function FundDetailClient({
         body: JSON.stringify(patch),
       });
       const j = (await res.json()) as { fund?: PortfolioFundRow; error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       if (j.fund) setFund(j.fund);
       await reload();
     } catch (e) {
@@ -517,7 +520,7 @@ export function FundDetailClient({
     const res = await fetch(`/api/portfolio/obligations/${id}/document`);
     const j = (await res.json()) as { url?: string; error?: string };
     if (!res.ok || !j.url) {
-      setErr(j.error ?? 'No download URL');
+      setErr(apiErrorDisplay(j, 'No download URL'));
       return;
     }
     window.open(j.url, '_blank', 'noopener,noreferrer');
@@ -930,41 +933,53 @@ export function FundDetailClient({
       ) : null}
 
       {tab === 'documents' ? (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-          <table className="min-w-full text-sm">
-            <thead className="border-b border-gray-200 bg-white text-left text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-3 py-2">Document</th>
-                <th className="px-3 py-2">Period</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">Uploaded</th>
-                <th className="px-3 py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {docs.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-3 py-8 text-center text-gray-500">
-                    No documents uploaded yet.
-                  </td>
-                </tr>
-              ) : (
-                docs.map((r) => (
-                  <tr key={r.id}>
-                    <td className="px-3 py-2">{r.document_name ?? '—'}</td>
-                    <td className="px-3 py-2">{r.period_label}</td>
-                    <td className="px-3 py-2">{REPORT_LABELS[r.report_type] ?? r.report_type}</td>
-                    <td className="px-3 py-2">{r.submitted_date ?? '—'}</td>
-                    <td className="px-3 py-2 text-right">
-                      <Button size="sm" variant="outline" type="button" onClick={() => void downloadDoc(r.id)}>
-                        Download
-                      </Button>
-                    </td>
+        <div className="space-y-8">
+          <FundDocumentsLibrary fundId={fund.id} canManage={canWrite} />
+
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-sm font-semibold text-[#0B1F45]">Reporting documents</h3>
+              <p className="text-xs text-gray-500">
+                Files submitted against reporting obligations. Upload from the Reporting tab.
+              </p>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+              <table className="min-w-full text-sm">
+                <thead className="border-b border-gray-200 bg-white text-left text-xs uppercase text-gray-500">
+                  <tr>
+                    <th className="px-3 py-2">Document</th>
+                    <th className="px-3 py-2">Period</th>
+                    <th className="px-3 py-2">Type</th>
+                    <th className="px-3 py-2">Uploaded</th>
+                    <th className="px-3 py-2 text-right">Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {docs.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-8 text-center text-gray-500">
+                        No reporting documents uploaded yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    docs.map((r) => (
+                      <tr key={r.id}>
+                        <td className="px-3 py-2">{r.document_name ?? '—'}</td>
+                        <td className="px-3 py-2">{r.period_label}</td>
+                        <td className="px-3 py-2">{REPORT_LABELS[r.report_type] ?? r.report_type}</td>
+                        <td className="px-3 py-2">{r.submitted_date ?? '—'}</td>
+                        <td className="px-3 py-2 text-right">
+                          <Button size="sm" variant="outline" type="button" onClick={() => void downloadDoc(r.id)}>
+                            Download
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       ) : null}
 

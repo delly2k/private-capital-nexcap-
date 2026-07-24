@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -196,7 +198,7 @@ export function PortfolioReportingCalendar({
       const q = new URLSearchParams({ from_date: from, to_date: to });
       const res = await fetch(`/api/portfolio/calendar?${q}`);
       const j = (await res.json()) as { obligations?: Obligation[]; error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setRawRows(j.obligations ?? []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');
@@ -325,7 +327,7 @@ export function PortfolioReportingCalendar({
           submitted_by: submitterName,
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay((await res.json().catch(() => ({}))) as ApiErrorBody, 'Failed'));
       dismissSlide();
       void refreshCurrentRange();
     } catch {
@@ -344,7 +346,7 @@ export function PortfolioReportingCalendar({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision, review_notes: null }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay((await res.json().catch(() => ({}))) as ApiErrorBody, 'Failed'));
       dismissSlide();
       void refreshCurrentRange();
     } catch {
@@ -368,7 +370,7 @@ export function PortfolioReportingCalendar({
     try {
       const res = await fetch(`/api/portfolio/obligations/${slide.id}/extract-all`, { method: 'POST' });
       const j = (await res.json()) as UnifiedExtractApiResponse & { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Extraction failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Extraction failed'));
       setSnapUploadSuggest(false);
       setUnifiedExtractData(j);
     } catch (e) {

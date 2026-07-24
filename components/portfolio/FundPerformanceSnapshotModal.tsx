@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { upsertFundSnapshotAction } from '@/app/(auth)/portfolio/funds/[id]/fund-snapshot-actions';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
+import { bannerVariantFromDisplay } from '@/lib/api/client-error';
 import type { SnapshotExtractionConfidence, SnapshotExtractedFields } from '@/lib/portfolio/snapshot-extraction';
 import type { VcFundSnapshot } from '@/types/database';
 
@@ -196,7 +198,7 @@ export function FundPerformanceSnapshotModal({
 
         <ConfidenceStrip confidence={frozenConfidence} />
 
-        {err ? <div className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</div> : null}
+        {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} className="mt-3" /> : null}
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div>

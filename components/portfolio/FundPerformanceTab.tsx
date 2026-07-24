@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
@@ -75,7 +77,7 @@ export function FundPerformanceTab({
     try {
       const res = await fetch(`/api/portfolio/funds/${fund.id}/performance`);
       const j = (await res.json()) as ApiPayload;
-      if (!res.ok) throw new Error(j.error ?? 'Failed to load');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed to load'));
       setPayload(j);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
+import { forbidden, FORBIDDEN_MSG } from '@/lib/api/error-responses';
 import { z } from 'zod';
 
 import { getProfile, requireAuth } from '@/lib/auth/session';
 import { can } from '@/lib/auth/permissions';
+import { hasModuleWriteAccess } from '@/lib/auth/has-module-write-access';
 import { createServerClient } from '@/lib/supabase/server';
 import type { VcQuarterlyAssessment, VcWatchlistEntry } from '@/types/database';
 import type { WatchlistFundRow } from '@/lib/portfolio/types';
-import type { Profile } from '@/types/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,17 +30,9 @@ const deleteSchema = z.object({
   reason: z.string().trim().min(1),
 });
 
-function canManageWatchlist(profile: Profile): boolean {
-  return (
-    profile.role === 'admin' ||
-    profile.role === 'pctu_officer' ||
-    profile.role === 'investment_officer'
-  );
-}
-
 function daysBetween(from: Date, to: Date): number {
   const ms = to.getTime() - from.getTime();
-  return Math.floor(ms / (86400000));
+  return Math.floor(ms / 86400000);
 }
 
 function isStaleEntry(row: VcWatchlistEntry, now: Date): boolean {
@@ -53,8 +46,10 @@ export async function GET() {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden(FORBIDDEN_MSG.watchlist);
   }
+
+  const canManage = await hasModuleWriteAccess(profile.tenant_id, profile.role, 'watchlist');
 
   const supabase = createServerClient();
   const { data: wlRows, error } = await supabase
@@ -71,7 +66,7 @@ export async function GET() {
   if (list.length === 0) {
     return NextResponse.json({
       rows: [] as WatchlistFundRow[],
-      can_manage: canManageWatchlist(profile),
+      can_manage: canManage,
       stale_count: 0,
     });
   }
@@ -117,7 +112,7 @@ export async function GET() {
 
   return NextResponse.json({
     rows,
-    can_manage: canManageWatchlist(profile),
+    can_manage: canManage,
     stale_count: rows.filter((r) => r.is_stale).length,
   });
 }
@@ -125,8 +120,12 @@ export async function GET() {
 export async function POST(req: Request) {
   await requireAuth();
   const profile = await getProfile();
-  if (!profile || !can(profile, 'write:applications') || !canManageWatchlist(profile)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!profile || !can(profile, 'write:applications')) {
+    return forbidden(FORBIDDEN_MSG.watchlist);
+  }
+  const canWrite = await hasModuleWriteAccess(profile.tenant_id, profile.role, 'watchlist');
+  if (!canWrite) {
+    return forbidden(FORBIDDEN_MSG.watchlist);
   }
 
   let body: z.infer<typeof postSchema>;
@@ -226,8 +225,12 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   await requireAuth();
   const profile = await getProfile();
-  if (!profile || !can(profile, 'write:applications') || !canManageWatchlist(profile)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!profile || !can(profile, 'write:applications')) {
+    return forbidden(FORBIDDEN_MSG.watchlist);
+  }
+  const canWrite = await hasModuleWriteAccess(profile.tenant_id, profile.role, 'watchlist');
+  if (!canWrite) {
+    return forbidden(FORBIDDEN_MSG.watchlist);
   }
 
   let body: z.infer<typeof patchSchema>;
@@ -298,8 +301,12 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   await requireAuth();
   const profile = await getProfile();
-  if (!profile || !can(profile, 'write:applications') || !canManageWatchlist(profile)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!profile || !can(profile, 'write:applications')) {
+    return forbidden(FORBIDDEN_MSG.watchlist);
+  }
+  const canWrite = await hasModuleWriteAccess(profile.tenant_id, profile.role, 'watchlist');
+  if (!canWrite) {
+    return forbidden(FORBIDDEN_MSG.watchlist);
   }
 
   let body: z.infer<typeof deleteSchema>;

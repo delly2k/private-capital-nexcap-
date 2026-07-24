@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { forbidden, FORBIDDEN_MSG } from '@/lib/api/error-responses';
 import { z } from 'zod';
 
 import { createServerClient } from '@/lib/supabase/server';
 import { getProfile, requireAuth } from '@/lib/auth/session';
 import { can } from '@/lib/auth/permissions';
+import { hasModuleWriteAccess } from '@/lib/auth/has-module-write-access';
 import { logComplianceAction } from '@/lib/portfolio/compliance-action-log';
 
 export const dynamic = 'force-dynamic';
@@ -72,10 +74,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
     await requireAuth();
     const profile = await getProfile();
     if (!profile || !can(profile, 'write:applications')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbidden(FORBIDDEN_MSG.reporting);
     }
-    if (profile.role !== 'admin' && profile.role !== 'pctu_officer') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const canWrite = await hasModuleWriteAccess(profile.tenant_id, profile.role, 'reporting_calendar');
+    if (!canWrite) {
+      return forbidden(FORBIDDEN_MSG.reporting);
     }
     const { id } = await ctx.params;
     if (!z.string().uuid().safeParse(id).success) {

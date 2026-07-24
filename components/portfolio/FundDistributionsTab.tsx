@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { RETURN_TYPE_BADGES, RETURN_TYPE_LABELS, RETURN_TYPES, type ReturnType } from '@/lib/portfolio/distributions';
 import { num } from '@/lib/portfolio/capital-calls';
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
 import type { PortfolioFundRow } from '@/lib/portfolio/types';
 import { cn } from '@/lib/utils';
 import type { VcDistribution } from '@/types/database';
@@ -70,12 +72,11 @@ export function FundDistributionsTab({ fund, canWrite }: { fund: PortfolioFundRo
     setErr(null);
     try {
       const res = await fetch(`/api/portfolio/funds/${fund.id}/distributions`);
-      const j = (await res.json()) as {
+      const j = (await res.json().catch(() => ({}))) as {
         distributions?: VcDistribution[];
         summary?: ApiSummary;
-        error?: string;
-      };
-      if (!res.ok) throw new Error(j.error ?? 'Failed to load');
+      } & ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed to load'));
       setRows(j.distributions ?? []);
       setSummary(j.summary ?? null);
       const maxN = Math.max(0, ...(j.distributions ?? []).map((d) => d.distribution_number));
@@ -160,8 +161,8 @@ export function FundDistributionsTab({ fund, canWrite }: { fund: PortfolioFundRo
           reference_number: refNo.trim() || null,
         }),
       });
-      const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setAddOpen(false);
       resetForm();
       await load();
@@ -193,8 +194,8 @@ export function FundDistributionsTab({ fund, canWrite }: { fund: PortfolioFundRo
           reference_number: refNo.trim() || null,
         }),
       });
-      const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setEditOpen(null);
       await load();
     } catch (e) {
@@ -210,8 +211,8 @@ export function FundDistributionsTab({ fund, canWrite }: { fund: PortfolioFundRo
     setErr(null);
     try {
       const res = await fetch(`/api/portfolio/funds/${fund.id}/distributions/${d.id}`, { method: 'DELETE' });
-      const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');
@@ -348,7 +349,7 @@ export function FundDistributionsTab({ fund, canWrite }: { fund: PortfolioFundRo
 
   return (
     <div className="w-full space-y-6">
-      {err ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</div> : null}
+      {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} /> : null}
 
       {summary ? (
         <>

@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
@@ -224,7 +226,7 @@ export function CapitalCallsOverviewClient() {
           kpi?: typeof kpi;
           error?: string;
         };
-        if (!res.ok) throw new Error(j.error ?? 'Failed');
+        if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
         if (cancelled) return;
         setFunds(j.funds ?? []);
         setRecent(j.recent_calls ?? []);

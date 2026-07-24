@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -67,7 +69,7 @@ export function FundAssessmentsTab({ fundId, canWrite }: { fundId: string; canWr
     const res = await fetch(`/api/portfolio/funds/${fundId}/assessments`);
     const j = (await res.json()) as { assessments?: Enriched[]; error?: string };
     if (!res.ok) {
-      setErr(j.error ?? 'Failed to load assessments');
+      setErr(apiErrorDisplay(j, 'Failed to load assessments'));
       setRows([]);
     } else {
       setRows(j.assessments ?? []);

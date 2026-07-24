@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 import type { Browser } from 'puppeteer-core';
 
 import { logAndReturn } from '@/lib/api/errors';
@@ -31,7 +32,7 @@ export async function GET(req: Request, ctx: Ctx) {
     await requireAuth();
     const profile = await getProfile();
     if (!profile || !can(profile, 'read:tenant')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbidden("Your role does not have permission to manage assessments. Contact your administrator.");
     }
 
     const { id: fundId, assessmentId } = await ctx.params;

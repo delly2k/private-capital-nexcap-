@@ -13,7 +13,8 @@ export type AuditEntityType =
   | 'disbursement'
   | 'approval'
   | 'task'
-  | 'investor';
+  | 'investor'
+  | 'portfolio_fund_document';
 
 /** Legacy DB values still readable via RLS / UI */
 const LEGACY_ENTITY_TYPE_ALIASES: Record<string, string> = {

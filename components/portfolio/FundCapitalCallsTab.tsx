@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PURPOSE_CATEGORY_LABELS, num } from '@/lib/portfolio/capital-calls';
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
 import type { PortfolioFundRow } from '@/lib/portfolio/types';
 import { cn } from '@/lib/utils';
 import type { VcCapitalCall, VcCapitalCallItem } from '@/types/database';
@@ -110,12 +112,11 @@ export function FundCapitalCallsTab({ fund, canWrite }: { fund: PortfolioFundRow
     setErr(null);
     try {
       const res = await fetch(`/api/portfolio/funds/${fund.id}/capital-calls`);
-      const j = (await res.json()) as {
+      const j = (await res.json().catch(() => ({}))) as {
         calls?: CallWithItems[];
         summary?: ApiSummary;
-        error?: string;
-      };
-      if (!res.ok) throw new Error(j.error ?? 'Failed to load');
+      } & ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed to load'));
       setCalls(j.calls ?? []);
       setSummary(j.summary ?? null);
       const maxN = Math.max(0, ...(j.calls ?? []).map((c) => c.notice_number));
@@ -163,8 +164,8 @@ export function FundCapitalCallsTab({ fund, canWrite }: { fund: PortfolioFundRow
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date_paid: payDate.trim(), notes: payNotes.trim() || null }),
       });
-      const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setPayOpen(null);
       setPayDate('');
       setPayNotes('');
@@ -189,8 +190,8 @@ export function FundCapitalCallsTab({ fund, canWrite }: { fund: PortfolioFundRow
           notes: editNotes.trim() || null,
         }),
       });
-      const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setEditOpen(null);
       await load();
     } catch (e) {
@@ -207,8 +208,8 @@ export function FundCapitalCallsTab({ fund, canWrite }: { fund: PortfolioFundRow
     setErr(null);
     try {
       const res = await fetch(`/api/portfolio/funds/${fund.id}/capital-calls/${c.id}`, { method: 'DELETE' });
-      const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed');
@@ -246,8 +247,8 @@ export function FundCapitalCallsTab({ fund, canWrite }: { fund: PortfolioFundRow
           items,
         }),
       });
-      const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      const j = (await res.json().catch(() => ({}))) as ApiErrorBody;
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setAddOpen(false);
       setDateNotice('');
       setDueDate('');
@@ -280,7 +281,7 @@ export function FundCapitalCallsTab({ fund, canWrite }: { fund: PortfolioFundRow
 
   return (
     <div className="w-full space-y-6">
-      {err ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</div> : null}
+      {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} /> : null}
 
       {summary ? (
         <>

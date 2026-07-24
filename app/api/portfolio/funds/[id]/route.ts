@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden, FORBIDDEN_MSG } from '@/lib/api/error-responses';
 
 import { createServerClient } from '@/lib/supabase/server';
 import { getProfile, requireAuth } from '@/lib/auth/session';
@@ -15,7 +16,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden(FORBIDDEN_MSG.generic);
   }
   const { id } = await ctx.params;
   const supabase = createServerClient();
@@ -47,7 +48,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden(FORBIDDEN_MSG.fundEdit);
   }
   const { id } = await ctx.params;
   let body: Record<string, unknown>;

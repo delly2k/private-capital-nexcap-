@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 
 import { getProfile, requireAuth } from '@/lib/auth/session';
 import { can } from '@/lib/auth/permissions';
@@ -35,7 +36,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage fund snapshots. Contact your administrator.");
   }
 
   const { id: fundId } = await ctx.params;
@@ -91,12 +92,31 @@ export async function GET(_req: Request, ctx: Ctx) {
   const total_distributed = distributedThroughDate(distributions, asOf);
   const nav = latest != null ? Number(latest.nav) : null;
 
+  const commitment = Number(row.dbj_commitment ?? 0);
   let latest_metrics: FundPerformanceMetrics | null = null;
   if (isPvc) {
-    latest_metrics = computeFundPerformanceMetrics(isPvc, total_called, total_distributed, nav ?? 0, [], [], dbjProRataPct);
+    latest_metrics = computeFundPerformanceMetrics(
+      isPvc,
+      total_called,
+      total_distributed,
+      nav ?? 0,
+      [],
+      [],
+      dbjProRataPct,
+      commitment,
+    );
   } else if (latest != null && nav != null) {
     const { dates, amounts } = buildCashFlowsForXirr(calls, distributions, nav, latest.snapshot_date, dbjProRataPct);
-    latest_metrics = computeFundPerformanceMetrics(isPvc, total_called, total_distributed, nav, dates, amounts, dbjProRataPct);
+    latest_metrics = computeFundPerformanceMetrics(
+      isPvc,
+      total_called,
+      total_distributed,
+      nav,
+      dates,
+      amounts,
+      dbjProRataPct,
+      commitment,
+    );
   }
 
   const { points: cash_flow_history } =

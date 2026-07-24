@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 import { z } from 'zod';
 
 import { can } from '@/lib/auth/permissions';
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage divestments. Contact your administrator.");
   }
 
   const supabase = createServerClient();
@@ -95,7 +96,7 @@ export async function POST(req: Request) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage divestments. Contact your administrator.");
   }
 
   let body: z.infer<typeof createSchema>;

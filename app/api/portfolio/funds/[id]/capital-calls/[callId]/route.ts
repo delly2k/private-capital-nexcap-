@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 import { z } from 'zod';
 
 import { createServerClient } from '@/lib/supabase/server';
@@ -22,7 +23,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage capital calls. Contact your administrator.");
   }
   const { id: fundId, callId } = await ctx.params;
 
@@ -85,7 +86,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage capital calls. Contact your administrator.");
   }
   const { id: fundId, callId } = await ctx.params;
   const supabase = createServerClient();

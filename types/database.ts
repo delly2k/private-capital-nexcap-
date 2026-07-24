@@ -1762,6 +1762,81 @@ export type Database = {
         };
         Relationships: [];
       };
+      vc_portfolio_fund_documents: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          fund_id: string;
+          title: string;
+          category:
+            | 'legal_agreement'
+            | 'side_letter'
+            | 'amendment'
+            | 'governance'
+            | 'notice'
+            | 'financial'
+            | 'other';
+          document_path: string;
+          document_name: string;
+          mime_type: string | null;
+          file_size: number | null;
+          notes: string | null;
+          effective_date: string | null;
+          uploaded_by: string;
+          uploaded_at: string;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          fund_id: string;
+          title: string;
+          category:
+            | 'legal_agreement'
+            | 'side_letter'
+            | 'amendment'
+            | 'governance'
+            | 'notice'
+            | 'financial'
+            | 'other';
+          document_path: string;
+          document_name: string;
+          mime_type?: string | null;
+          file_size?: number | null;
+          notes?: string | null;
+          effective_date?: string | null;
+          uploaded_by: string;
+          uploaded_at?: string;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          tenant_id?: string;
+          fund_id?: string;
+          title?: string;
+          category?:
+            | 'legal_agreement'
+            | 'side_letter'
+            | 'amendment'
+            | 'governance'
+            | 'notice'
+            | 'financial'
+            | 'other';
+          document_path?: string;
+          document_name?: string;
+          mime_type?: string | null;
+          file_size?: number | null;
+          notes?: string | null;
+          effective_date?: string | null;
+          uploaded_by?: string;
+          uploaded_at?: string;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       benchmark_indices: {
         Row: {
           id: string;

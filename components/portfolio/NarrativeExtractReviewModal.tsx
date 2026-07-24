@@ -1,8 +1,11 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
 import { cloneNarrativePayload, NarrativeExtractFormBody } from '@/components/portfolio/NarrativeExtractFormBody';
 import type { NarrativeExtractionPayload } from '@/lib/portfolio/narrative-extraction';
 
@@ -53,7 +56,7 @@ export function NarrativeExtractReviewModal({
     const j = (await res.json()) as { error?: string };
     setBusy(false);
     if (!res.ok) {
-      setErr(j.error ?? 'Save failed');
+      setErr(apiErrorDisplay(j, 'Save failed'));
       return;
     }
     onSaved();
@@ -74,7 +77,7 @@ export function NarrativeExtractReviewModal({
           AI-suggested fields from the report. Edit as needed, then save to store this extract (including structured fund data).
         </p>
 
-        {err ? <div className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</div> : null}
+        {err ? <ApiErrorBanner message={err} variant={bannerVariantFromDisplay(err)} className="mt-3" /> : null}
 
         <div className="mt-6">
           <NarrativeExtractFormBody draft={draft} setDraft={setDraft} />

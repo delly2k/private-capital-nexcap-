@@ -11,7 +11,7 @@ export default async function NewAssessmentPage({ params }: { params: Promise<{ 
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'write:applications')) {
-    return <p className="text-sm text-red-700">Forbidden</p>;
+    return <p className="text-sm text-red-700">You do not have permission to view this page. Contact your administrator if you believe this is incorrect.</p>
   }
 
   const { id: fundId } = await params;

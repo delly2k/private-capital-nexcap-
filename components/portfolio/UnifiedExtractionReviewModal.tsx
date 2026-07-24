@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -305,7 +307,7 @@ export function UnifiedExtractionReviewModal({
         body: JSON.stringify(body),
       });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) errors.push(`Narrative: ${j.error ?? 'Save failed'}`);
+      if (!res.ok) errors.push(`Narrative: ${apiErrorDisplay(j, 'Save failed')}`);
       else results.push('Narrative extract saved.');
     }
 

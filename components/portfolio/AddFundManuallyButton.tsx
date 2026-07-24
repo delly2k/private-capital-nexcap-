@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -65,7 +67,7 @@ export function AddFundManuallyButton() {
         }),
       });
       const j = (await res.json()) as { fund?: { id: string }; error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Failed'));
       setOpen(false);
       if (j.fund?.id) router.push(`/portfolio/funds/${j.fund.id}`);
       router.refresh();

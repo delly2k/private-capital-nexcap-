@@ -1,5 +1,7 @@
 'use client';
 
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
+
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
@@ -148,7 +150,7 @@ export function FundPctuProfileEditor({
         body: JSON.stringify({ pctu_profile: profile as unknown as Json }),
       });
       const j = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(j.error ?? 'Save failed');
+      if (!res.ok) throw new Error(apiErrorDisplay(j, 'Save failed'));
       setOk('PCTU profile saved.');
       onSaved?.();
     } catch (e) {

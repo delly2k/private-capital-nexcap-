@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 
 import { can } from '@/lib/auth/permissions';
 import { getProfile, requireAuth } from '@/lib/auth/session';
@@ -42,7 +43,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   await requireAuth();
   const viewer = await getProfile();
   if (!viewer || !can(viewer, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("You do not have permission to perform this action. Contact your administrator if you believe this is incorrect.");
   }
 
   const { id: fundId } = await ctx.params;

@@ -87,7 +87,16 @@ export function deriveFinancialPerformance(params: {
   const asOf = latestSnapshot?.snapshot_date ?? new Date().toISOString().slice(0, 10);
   const pct = fund.dbj_pro_rata_pct ?? null;
   const flows = buildCashFlowsForXirr(capitalCalls, distributions, nav, asOf, pct);
-  const m = computeFundPerformanceMetrics(!!fund.is_pvc, called, distributed, nav, flows.dates, flows.amounts, pct);
+  const m = computeFundPerformanceMetrics(
+    !!fund.is_pvc,
+    called,
+    distributed,
+    nav,
+    flows.dates,
+    flows.amounts,
+    pct,
+    Number(fund.dbj_commitment ?? 0),
+  );
   const irrPct = m.calculated_irr != null ? Number((m.calculated_irr * 100).toFixed(2)) : null;
   const hurdle = fund.target_irr_pct != null ? Number(fund.target_irr_pct) : null;
 

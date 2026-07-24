@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { forbidden } from '@/lib/api/error-responses';
 
 import { can } from '@/lib/auth/permissions';
 import { getProfile, requireAuth } from '@/lib/auth/session';
@@ -13,7 +14,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   await requireAuth();
   const profile = await getProfile();
   if (!profile || !can(profile, 'read:tenant')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return forbidden("Your role does not have permission to manage divestments. Contact your administrator.");
   }
 
   const { id: fundId } = await ctx.params;

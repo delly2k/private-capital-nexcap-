@@ -5,6 +5,8 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
+import { ApiErrorBanner } from '@/components/ui/ApiErrorBanner';
+import { apiErrorDisplay, bannerVariantFromDisplay, type ApiErrorBody } from '@/lib/api/client-error';
 
 type ExistingAssessmentLite = {
   id: string;
@@ -89,25 +91,24 @@ export function AssessmentPeriodStartClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assessment_period: period, assessment_date: today }),
       });
-      const j = (await res.json()) as {
+      const j = (await res.json().catch(() => ({}))) as {
         assessment?: { id: string; status: string };
         redirected?: boolean;
         assessment_id?: string;
-        error?: string;
-      };
+      } & ApiErrorBody;
       if (res.ok && j.assessment?.id) {
         router.replace(`/portfolio/funds/${fundId}/assessments/${j.assessment.id}`);
         router.refresh();
         return;
       }
       if (res.status === 409) {
-        setError(j.error ?? 'A quarterly assessment already exists for the selected period.');
+        setError(apiErrorDisplay(j, 'A quarterly assessment already exists for the selected period.'));
         if (j.assessment_id) {
           setConflictLink(`/portfolio/funds/${fundId}/assessments/${j.assessment_id}`);
         }
         return;
       }
-      setError(j.error ?? 'Failed to create assessment.');
+      setError(apiErrorDisplay(j, 'Failed to create assessment.'));
     } catch {
       setError('Failed to create assessment.');
     } finally {
@@ -191,10 +192,10 @@ export function AssessmentPeriodStartClient({
         ) : null}
 
         {error ? (
-          <div className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-            {error}{' '}
+          <div className="mt-4">
+            <ApiErrorBanner message={error} variant={bannerVariantFromDisplay(error)} />
             {conflictLink ? (
-              <Link href={conflictLink} className="font-medium underline">
+              <Link href={conflictLink} className="-mt-2 mb-4 block text-sm font-medium text-[#0B1F45] underline">
                 View assessment
               </Link>
             ) : null}

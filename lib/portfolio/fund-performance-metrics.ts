@@ -171,18 +171,21 @@ export function computeFundPerformanceMetrics(
   xirrDates: string[],
   xirrAmounts: number[],
   dbjProRataPct?: number | null,
+  commitment: number = 0,
 ): FundPerformanceMetrics {
   if (isPvc) {
-    const dpi = called > 0 ? distributed / called : null;
+    const paidIn = called > 0 ? called : commitment;
+    const dpi = paidIn > 0 ? distributed / paidIn : null;
     return { dpi, rvpi: null, tvpi: null, moic: null, calculated_irr: null };
   }
-  if (called <= 0) {
+  const paidIn = called > 0 ? called : commitment;
+  if (paidIn <= 0) {
     return { dpi: null, rvpi: null, tvpi: null, moic: null, calculated_irr: null };
   }
   const navDbj = applyDbjNavShareForMetrics(navFullFund, dbjProRataPct);
-  const dpi = distributed / called;
-  const rvpi = navDbj / called;
-  const tvpi = (distributed + navDbj) / called;
+  const dpi = distributed / paidIn;
+  const rvpi = navDbj / paidIn;
+  const tvpi = (distributed + navDbj) / paidIn;
   const moic = tvpi;
   const calculated_irr = calculateXIRR(xirrDates, xirrAmounts);
   return { dpi, rvpi, tvpi, moic, calculated_irr };
@@ -240,7 +243,7 @@ export function metricsForSnapshot(
   const distributed = distributedThroughDate(distributions, asOf);
   const navFull = num(snapshot.nav);
   const { dates, amounts } = buildCashFlowsForXirr(calls, distributions, navFull, asOf, dbjProRataPct);
-  return computeFundPerformanceMetrics(isPvc, called, distributed, navFull, dates, amounts, dbjProRataPct);
+  return computeFundPerformanceMetrics(isPvc, called, distributed, navFull, dates, amounts, dbjProRataPct, 0);
 }
 
 export function enrichSnapshotsWithMetrics(
